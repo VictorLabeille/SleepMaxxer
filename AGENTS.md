@@ -27,6 +27,10 @@ puis **reportée ici et dans la note Obsidian**.
   exclue avec sa raison. Un écran livré qui n'est pas ouvert se **retire**, il ne s'améliore
   pas.
 - **Ne jamais parler au réveil directement.** Tout passe par Somneo-Scraper.
+- **La copie locale est une copie, jamais une source.** Le collecteur fait autorité en cas de
+  divergence ; la synchronisation est unidirectionnelle et par ajout ; hors du réseau
+  domestique l'app est en lecture seule. Deux vérités appelleraient un moteur de fusion —
+  exactement ce qui a fait abandonner Santé Connect.
 - **Ne jamais afficher un seuil ou un verdict dont on ne peut pas citer la source.**
 - **Ne jamais afficher de façon optimiste le résultat d'une écriture.** Un réglage refusé par
   le réveil ne doit jamais apparaître comme appliqué — sur une alarme, l'illusion se paie au
