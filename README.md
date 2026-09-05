@@ -35,13 +35,19 @@ d'usine répondent à quiconque se trouve sur le LAN.
 ```
 Somneo HF3671/01  ←→  Somneo-Scraper (Radxa Zero, 24/7)  ←→  SleepMaxxer
    API locale            collecte · historise · relaie        (ce dépôt)
-   sans mémoire          SQLite = la seule mémoire
+   sans mémoire          SQLite — la source                    copie locale
+                                                               + export Drive
 ```
 
 - L'application **ne parle jamais au réveil directement** : tout passe par le collecteur,
   historique comme temps réel comme pilotage.
 - Le collecteur et le téléphone sont sur le **même réseau domestique**. Aucune exposition vers
   l'extérieur.
+- Le téléphone **conserve une copie complète de l'historique**, rattrapée à chaque ouverture.
+  Elle sert de sauvegarde — le collecteur est sinon le seul dépositaire d'une donnée qui ne se
+  remesure pas — et rend l'historique consultable hors du domicile, en lecture seule, sans que
+  le collecteur ait à sortir du réseau. Le collecteur reste la source : en cas de divergence,
+  c'est lui qui fait autorité.
 - Le réveil **n'exige aucune authentification** : ni appairage, ni compte Philips.
 - La **remise à l'heure du réveil** appartient au collecteur, qui tourne en continu ;
   l'application signale un écart, elle ne le corrige pas.

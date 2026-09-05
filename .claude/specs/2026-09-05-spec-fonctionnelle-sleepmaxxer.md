@@ -166,15 +166,47 @@ de réapprendre une navigation.
   nuit consultée : le texte est copié dans le presse-papier et partageable. Même mécanisme que
   le bilan de séance de Commit & Push, dont il reprend l'esprit.
 
-#### C. Transversal
+#### C. Copie locale et sauvegarde
+
+Ajouté le 2026-09-06. Le collecteur est, après l'isolement, la **seule** mémoire de
+l'historique — et il vit sur une carte d'occasion, sur eMMC, alimentée par le port USB d'un
+réveil, sans écran ni console série. C'est un **point unique de défaillance sur une donnée
+irremplaçable** : ce qui est perdu ne se remesure pas. Le téléphone est le seul autre appareil
+qui voit ces données.
+
+- **Copie locale complète et indéfinie.** L'application conserve sur le téléphone l'intégralité
+  de l'historique — nuits et relevés de capteurs — sans fenêtre glissante ni purge.
+- **Rattrapage à chaque ouverture**, quand le collecteur répond : l'app demande ce qui est
+  arrivé depuis son dernier relevé et l'ajoute. Pas de tâche de fond, pas de permission
+  supplémentaire.
+- **Consultation complète hors du domicile**, en lecture seule.
+- **Export vers le Drive**, déclenché à la main, avec une **invite non bloquante** quand du
+  temps a passé depuis le dernier export. C'est le seul « automatique » praticable sur mobile
+  sans backend — constat déjà établi pour Commit & Push le 2026-06-22, et qui n'a pas changé.
+- **Contenu de l'export** : les données **et les réglages du réveil** (alarmes, thèmes,
+  coucher de soleil), pour qu'un réveil réinitialisé ou remplacé puisse être remis en état.
+
+Trois règles sans lesquelles cette fonction dérape :
+
+1. **Le téléphone détient une copie, jamais une source.** Le contrat reste « le collecteur est
+   la mémoire ». En cas de divergence, **le collecteur gagne**. Sans cette règle il y a deux
+   vérités et un moteur de fusion à écrire — précisément ce qui a fait abandonner Santé Connect.
+2. **La synchronisation est unidirectionnelle et par ajout.** Un relevé de capteur ne se
+   modifie pas, il s'accumule. Ce n'est pas de la synchronisation, c'est du rattrapage.
+3. **Hors du réseau domestique, l'application est en lecture seule.** Aucun pilotage, aucune
+   correction d'heure — le réveil est le dépositaire, et il est à la maison.
+
+> **Conséquence pour le backend, à intégrer dès sa conception** : l'API du collecteur doit
+> exposer un point d'entrée « tout ce qui est arrivé depuis telle date », paginé. Ajouté après
+> coup, il obligerait à retoucher le schéma de la base.
+
+#### D. Transversal
 
 - **État de la liaison** visible et compréhensible, distinguant les deux pannes possibles
   (voir §3) : l'application ne doit jamais laisser croire à une panne du réveil quand c'est le
   collecteur qui est muet, ni l'inverse.
-- **Dernière nuit consultée conservée en cache**, relisible hors du réseau domestique et
-  signalée comme datée.
 
-#### D. Conception (livrable à part entière, pas une finition)
+#### E. Conception (livrable à part entière, pas une finition)
 
 - **Maquettes des écrans** produites et validées avant l'implémentation.
 - **Direction artistique « liquid glass »**, explorée volontairement comme nouveauté par
@@ -198,15 +230,16 @@ manque se soit manifesté à l'usage.
 | **Radio FM et ses présélections** | Fonction périphérique, non pratiquée. |
 | **Réglages d'afficheur du réveil** (affichage permanent, luminosité 1–6) | Se règle une fois pour toutes, se fait déjà sur la façade. Reste une bonne **matière de contribution à `pysomneo`** (issue #13) — mais c'est le dépôt du backend qui la portera, pas l'app. |
 | **Seuils réglables par l'utilisateur** | Les seuils sont figés et documentés. Les rendre modifiables ajouterait un écran de réglages pour un besoin qui ne s'est pas manifesté. |
-| **Accès à distance** (VPN, tunnel, exposition du collecteur) | Une couche réseau à concevoir, sécuriser et maintenir, pour un usage qui se produit au lit. Hors du domicile, l'app se limite à la dernière nuit en cache. |
+| **Exposition du collecteur à internet** (VPN, tunnel, ouverture de port) | Une couche réseau à concevoir, sécuriser et maintenir sur un appareil sans contrôle d'accès. Le besoin qui la motivait — consulter hors du domicile — est couvert autrement, par la copie locale : les données sont déjà dans la poche. Supprimer le problème plutôt que le traiter. |
 | **Synchronisation Santé Connect** | Piste explorée puis **abandonnée** : l'API n'a pas de champ pour les données de capteurs, et la priorité de source n'est pas chirurgicale — corriger la seule heure de coucher supposerait de relire la session existante, la recomposer et la réécrire, par-dessus des entrées Fitbit déjà désordonnées. Remplacée par le résumé textuel. |
 | **Compte, appairage, authentification** | Le firmware n'en exige aucun : le schéma de défi/réponse existe dans l'app constructeur mais n'est jamais déclenché, le port d'appairage répond « non implémenté ». Rien à construire. |
 | **Onglets « Conseils » et « Plus »** | Contenu éditorial générique et gestion de compte. C'est le bloat qu'on retire. |
-| **Sauvegarde / restauration des données depuis l'app** | La mémoire vit dans la base du collecteur, pas dans le téléphone. La sauvegarde est un sujet du backend. |
+| **Synchronisation bidirectionnelle** | Le téléphone n'écrit jamais dans la mémoire du collecteur. Voir §2.C. |
 | **Pilotage depuis plusieurs téléphones, notifications push, widgets** | Aucun usage identifié. |
 
 ### Hypothèses
 
+- **Le collecteur reste la source de l'historique**, le téléphone n'en tient qu'une copie.
 - **L'application ne parle jamais au réveil pour l'historique** — uniquement au collecteur
   Somneo-Scraper, seule mémoire existante après isolement. Le temps réel et le pilotage
   transitent également par le collecteur, qui relaie.
@@ -288,7 +321,23 @@ détient tout l'historique.
 | Réglage hors bornes | Intensité, durée, volume poussés au maximum | Bornes respectées à la saisie, jamais corrigées après coup par l'appareil. |
 | Action pendant une alarme | Le réveil sonne | L'app montre l'état réel (alarme active, ou en rappel). |
 
-### E. Temps — le risque propre à l'isolement
+### E. Copie locale, rattrapage et sauvegarde
+
+| Cas | Déclencheur | Comportement attendu |
+| --- | --- | --- |
+| Première synchronisation | Application neuve devant un collecteur qui a déjà des mois d'historique | Rattrapage **par lots**, avec une progression visible et une app utilisable pendant ce temps. Les nuits récentes arrivent en premier : c'est ce qu'on regarde. |
+| Rattrapage interrompu | L'app est fermée, le réseau tombe, le téléphone se met en veille | Reprise là où elle s'était arrêtée, jamais depuis le début. Ce qui est déjà copié l'est définitivement. |
+| Nuit déjà connue renvoyée | Le collecteur renvoie une période que le téléphone a déjà | Aucun doublon : la nuit est remplacée par la version du collecteur, qui fait autorité. |
+| Le téléphone en sait plus que le collecteur | Le collecteur a été réinstallé, ou restauré depuis une sauvegarde plus ancienne | **Le téléphone ne perd rien.** Il garde ses nuits, et signale l'écart plutôt que de s'aligner en silence. C'est le cas où le backup sert, et l'aligner sur le collecteur détruirait ce qu'on cherchait à protéger. |
+| Nuit corrigée après coup | L'heure de coucher est corrigée sur le réveil | La correction arrive par le collecteur au rattrapage suivant et remplace la valeur locale. |
+| Espace disque insuffisant | Le téléphone sature | Le rattrapage s'arrête proprement, l'existant reste lisible, et l'app le dit clairement au lieu d'échouer en silence. |
+| Export volumineux | Plusieurs mois à exporter | La taille est annoncée avant de lancer l'export. Un export d'un an se compte en dizaines de méga-octets — assez pour que la feuille de partage rame sans prévenir. |
+| Export annulé | L'utilisateur ferme la feuille de partage | Aucune action, aucun message d'erreur, et **le compteur de rappel n'est pas remis à zéro** : un export annulé n'est pas un export. |
+| Rappel de sauvegarde | Du temps a passé depuis le dernier export réussi | Invite **non bloquante**, lançant l'export en un geste. Fermée sans agir, elle ne réapparaît pas à chaque ouverture — elle revient au palier suivant. |
+| Fichier de sauvegarde invalide | Import d'un fichier tronqué, d'une autre app, ou d'une version future | **Refus net, données locales intactes.** Jamais d'import partiel. |
+| Restauration | Import d'une sauvegarde sur un téléphone neuf | Remplacement complet et atomique, après confirmation explicite. |
+
+### F. Temps — le risque propre à l'isolement
 
 | Cas | Déclencheur | Comportement attendu |
 | --- | --- | --- |
@@ -296,7 +345,7 @@ détient tout l'historique.
 | Changement d'heure été / hiver | Passage saisonnier | Une nuit qui chevauche le changement conserve une durée juste ; aucune nuit fantôme ni dupliquée. |
 | Horloges désaccordées | Le téléphone et le réveil divergent | Les heures d'une nuit proviennent d'**une seule source** — celle du réveil, via le collecteur — pour ne pas mélanger deux référentiels dans une même durée. |
 
-### F. Résumé pour le coach
+### G. Résumé pour le coach
 
 | Cas | Déclencheur | Comportement attendu |
 | --- | --- | --- |
@@ -320,7 +369,12 @@ détient tout l'historique.
       montre le trou.
 - [ ] Un réglage refusé par le réveil n'apparaît jamais comme appliqué.
 - [ ] Le résumé d'une nuit se copie en un geste et se colle tel quel au coach Google Health.
-- [ ] Hors du domicile, la dernière nuit reste lisible et est signalée comme datée.
+- [ ] **Hors du domicile, tout l'historique reste consultable**, en lecture seule.
+- [ ] **Le collecteur peut être effacé sans perte** : après une synchronisation, le téléphone
+      détient l'intégralité de l'historique, et une sauvegarde exportée le restitue sur un
+      téléphone neuf. C'est le seul critère qui prouve que la copie locale est un backup.
+- [ ] Un rattrapage interrompu reprend là où il s'était arrêté, jamais depuis le début.
+- [ ] Un collecteur réinstallé ne fait perdre aucune nuit au téléphone.
 - [ ] Tous les écrans livrés sont ouverts au moins une fois par semaine trois mois après la
       livraison. Un écran non ouvert est **retiré**, pas amélioré.
 
@@ -344,6 +398,21 @@ mais parce que la source manquante a été trouvée.
 
 **Décision retenue** : verdicts affichés, seuils figés, source citée. Le raisonnement initial
 reste valable et s'applique toujours à tout seuil qu'on ne saurait pas sourcer.
+
+### La copie locale entre au périmètre — 2026-09-06
+
+**Décision initiale** : exclure toute sauvegarde depuis l'application, au motif que « la
+mémoire vit dans la base du collecteur, pas dans le téléphone ». La phrase était juste et la
+conclusion fausse : c'est précisément *parce que* la mémoire ne vit qu'à un seul endroit
+qu'une copie s'impose. J'avais décrit le défaut et conclu qu'il fallait le laisser.
+
+**Ce qui a changé** : rien de neuf n'a été découvert — le fait était écrit dans le cadrage dès
+le premier jour (« la base SQLite du collecteur est la seule mémoire qui existe »). Ce qui
+manquait, c'était d'en tirer la conséquence.
+
+**Décision retenue** : copie locale complète et indéfinie, plus un export vers le Drive. En
+prime, cela **supprime** le besoin qui motivait l'accès distant, au lieu de le traiter : les
+données sont déjà dans la poche, le collecteur n'a jamais à sortir du réseau domestique.
 
 ### Les vues agrégées entrent au périmètre — 2026-09-06
 
@@ -384,6 +453,14 @@ du backend.
 
 ## 6. Questions ouvertes / à trancher
 
+- [ ] **Le téléphone peut-il re-remplir un collecteur neuf ?** C'est la question qui décide si
+      la copie locale est un vrai backup ou seulement une lecture de secours. Y répondre « oui »
+      suppose un point d'entrée d'écriture en masse côté collecteur, donc une brèche dans la
+      règle « le téléphone n'écrit jamais dans la mémoire ». À trancher au cadrage du backend,
+      pas ici — mais à ne pas oublier, c'est le jour où la carte meurt que ça se saura.
+- [ ] **Seuil du rappel de sauvegarde.** Compté en jours, en nuits accumulées, ou en volume
+      non exporté ? Commit & Push compte en séances ; ici la donnée arrive toute seule, sans
+      geste, donc un compte en jours est probablement plus juste.
 - [ ] **`lgtds`, champ de lumière du profil d'alarme.** Listé par la rétro-ingénierie sans que
       son sens ait été établi. À vérifier sur l'appareil avant de décider s'il a sa place dans
       l'écran d'alarme — il est pour l'instant hors périmètre par défaut d'information.
