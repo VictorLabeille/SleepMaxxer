@@ -1,0 +1,1191 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Manrope', 'Segoe UI', system-ui, sans-serif; }
+    a { color: oklch(0.74 0.11 195); text-decoration: none; }
+    a:hover { color: oklch(0.82 0.10 195); }
+    /* Toute zone tactile porte son propre rayon : un survol à angles droits
+       par-dessus une carte arrondie se voit immédiatement. */
+    .tap { cursor: pointer; border-radius: 14px; transition: background 150ms ease, opacity 150ms ease; }
+    .tap:hover { background: rgba(255, 255, 255, 0.045); }
+    .tap:active { opacity: 0.72; }
+    .row { border-radius: 0; }
+    .glass { background: rgba(255,255,255,0.045); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.085); }
+    /* min-height: 0 est indispensable — sans lui un enfant flex refuse de
+       rétrécir sous son contenu, overflow-y ne scrolle pas, et la page est
+       coupée net au milieu d'une carte. */
+    .scr { flex-grow: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; }
+    .scr::-webkit-scrollbar { width: 0; }
+    .sld { cursor: grab; touch-action: none; padding: 12px 0; }
+    .sld:active { cursor: grabbing; }
+    .knob { box-shadow: 0 2px 8px rgba(0,0,0,0.45); }
+  </style>
+</helmet>
+
+<div style="width: 412px; height: 923px; overflow: hidden; position: relative; background: linear-gradient(178deg, oklch(0.26 0.038 226) 0%, oklch(0.20 0.032 230) 42%, oklch(0.165 0.026 234) 100%); color: oklch(0.97 0.006 230); display: flex; flex-direction: column;">
+
+  <!-- Réserve pour la barre système du téléphone : rien ne s'y dessine -->
+  <div style="height: 44px; flex-shrink: 0;"></div>
+
+  <!-- ══════════ MON APPAREIL ══════════ -->
+  <sc-if value="{{ isDevice }}" hint-placeholder-val="{{ true }}">
+  <div class="scr">
+    <div style="padding: 4px 20px 16px; text-align: center; font-size: 19px; font-weight: 500;">Mon Appareil</div>
+
+    <div style="padding: 0 20px 20px; display: flex; align-items: center; gap: 14px;">
+      <div style="position: relative; width: 54px; height: 54px; border-radius: 17px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="1.4" stroke-linecap="round"><circle cx="12" cy="13" r="7.5"></circle><path d="M12 9.5V13l2.4 1.6M4.6 5.2l2.6-2M19.4 5.2l-2.6-2"></path></svg>
+        <div style="position: absolute; right: -3px; top: -3px; width: 15px; height: 15px; border-radius: 50%; background: oklch(0.75 0.16 148); border: 2.5px solid oklch(0.24 0.036 228);"></div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 3px; flex-grow: 1;">
+        <div style="font-size: 16px; font-weight: 600;">Somneo HF3671</div>
+        <div style="font-size: 12.5px; color: rgba(255,255,255,0.5);">Collecteur joignable · relevé il y a 2 min</div>
+      </div>
+    </div>
+
+    <div style="padding: 0 20px 8px; font-size: 12.5px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: rgba(255,255,255,0.42);">Préparez-vous à dormir</div>
+    <div class="tap glass" onClick="{{ goAlarms }}" style="margin: 0 16px 20px; border-radius: 20px; padding: 17px 18px; min-height: 44px; display: flex; align-items: center; gap: 14px;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ accent }}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8.5a6 6 0 1 0-12 0c0 6-2 7.5-2 7.5h16s-2-1.5-2-7.5z"></path><path d="M10.3 19.5a2 2 0 0 0 3.4 0"></path></svg>
+      <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1;">
+        <div style="font-size: 15.5px; font-weight: 600;">Alarmes</div>
+        <div style="font-size: 12.5px; color: rgba(255,255,255,0.5);">{{ alarmSummary }}</div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
+    </div>
+
+    <div style="padding: 0 20px 8px; font-size: 12.5px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: rgba(255,255,255,0.42);">S'endormir</div>
+    <div class="tap glass" onClick="{{ goSunset }}" style="margin: 0 16px 20px; border-radius: 20px; padding: 17px 18px; min-height: 44px; display: flex; align-items: center; gap: 14px;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ accent }}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M4.9 6.9l2.1 2.1M2 16h3M19 16h3M17 9l2.1-2.1"></path><path d="M8 16a4 4 0 0 1 8 0"></path><path d="M3 20h18"></path></svg>
+      <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1;">
+        <div style="font-size: 15.5px; font-weight: 600;">Coucher de soleil</div>
+        <div style="font-size: 12.5px; color: rgba(255,255,255,0.5);">{{ duskDur }} minutes · {{ duskTheme }}</div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
+    </div>
+
+    <div style="padding: 0 20px 8px; font-size: 12.5px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: rgba(255,255,255,0.42);">Télécommande</div>
+
+    <div class="glass" style="margin: 0 16px 12px; border-radius: 20px; padding: 17px 18px;">
+      <div style="display: flex; align-items: center; gap: 11px; margin-bottom: 14px;">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.72)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"></path></svg>
+        <div style="font-size: 15.5px; font-weight: 600; flex-grow: 1;">Suivi de l'heure de coucher</div>
+      </div>
+      <div class="tap" onClick="{{ toggleTracking }}" style="border-radius: 14px; padding: 15px; min-height: 44px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; background: {{ trackBg }}; border: 1px solid {{ trackBorder }};">
+        <div style="font-size: 15.5px; font-weight: 600; color: {{ trackColor }};">{{ trackLabel }}</div>
+      </div>
+      <div style="margin-top: 11px; font-size: 12px; color: rgba(255,255,255,0.42); line-height: 1.4; text-align: center;">{{ trackHint }}</div>
+    </div>
+
+    <div class="glass" style="margin: 0 16px 24px; border-radius: 20px; padding: 17px 18px;">
+      <div style="display: flex; align-items: center; gap: 11px;">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="{{ lightIconColor }}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"></path></svg>
+        <div style="font-size: 15.5px; font-weight: 600; flex-grow: 1;">Lumière</div>
+        <div class="tap" onClick="{{ toggleLight }}" style="width: 52px; height: 31px; border-radius: 999px; background: {{ switchBg }}; display: flex; align-items: center; padding: 3px; box-sizing: border-box; justify-content: {{ switchPos }};">
+          <div style="width: 25px; height: 25px; border-radius: 50%; background: #ffffff;"></div>
+        </div>
+      </div>
+      <sc-if value="{{ lightOn }}" hint-placeholder-val="{{ true }}">
+        <div style="margin-top: 12px;">
+          <div style="display: flex; align-items: baseline; justify-content: space-between;">
+            <div style="font-size: 12.5px; color: rgba(255,255,255,0.5);">Intensité</div>
+            <div style="font-size: 13px; font-weight: 600;">{{ lightLevel }} / 25</div>
+          </div>
+          <div class="sld" onPointerDown="{{ lightDown }}" onPointerMove="{{ lightMove }}" onPointerUp="{{ lightUp }}">
+            <div style="height: 8px; border-radius: 999px; background: rgba(255,255,255,0.1); position: relative;">
+              <div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{ lightPct }}; background: {{ accent }}; border-radius: 999px;"></div>
+              <div class="knob" style="position: absolute; left: {{ lightPct }}; top: 50%; transform: translate(-50%, -50%); width: 22px; height: 22px; border-radius: 50%; background: #ffffff;"></div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px; margin-top: 6px;">
+            <div class="tap" onClick="{{ dimLight }}" style="flex-grow: 1; min-height: 44px; border-radius: 13px; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; font-size: 19px; font-weight: 500;">−</div>
+            <div class="tap" onClick="{{ raiseLight }}" style="flex-grow: 1; min-height: 44px; border-radius: 13px; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; font-size: 19px; font-weight: 500;">+</div>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ══════════ ALARMES ══════════ -->
+  <sc-if value="{{ isAlarms }}" hint-placeholder-val="{{ false }}">
+  <div class="scr">
+    <div style="display: flex; align-items: center; padding: 0 8px 14px; flex-shrink: 0;">
+      <div class="tap" onClick="{{ goDevice }}" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+      </div>
+      <div style="flex-grow: 1; text-align: center; font-size: 19px; font-weight: 500;">Alarmes</div>
+      <div class="tap" onClick="{{ addAlarm }}" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ accent }}" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+      </div>
+    </div>
+
+    <sc-for list="{{ alarms }}" as="al" hint-placeholder-count="2">
+      <div class="tap row" onClick="{{ al.open }}" style="padding: 20px 20px 22px; display: flex; align-items: flex-start; gap: 14px; border-bottom: 1px solid rgba(255,255,255,0.055); opacity: {{ al.opacity }};">
+        <div style="display: flex; flex-direction: column; gap: 5px; flex-grow: 1;">
+          <div style="font-size: 44px; font-weight: 300; letter-spacing: -1.5px; line-height: 1;">{{ al.time }}</div>
+          <div style="font-size: 13.5px; color: rgba(255,255,255,0.6);">{{ al.days }}</div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 14px;">
+          <sc-if value="{{ al.pw }}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; align-items: center; gap: 5px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="{{ accent }}" stroke="none"><path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12z"></path></svg>
+              <div style="font-size: 13.5px; font-weight: 500; color: rgba(255,255,255,0.75);">{{ al.pwTime }}</div>
+            </div>
+          </sc-if>
+          <div class="tap" onClick="{{ al.toggle }}" style="width: 52px; height: 31px; border-radius: 999px; background: {{ al.bg }}; display: flex; align-items: center; padding: 3px; box-sizing: border-box; justify-content: {{ al.pos }};">
+            <div style="width: 25px; height: 25px; border-radius: 50%; background: #ffffff;"></div>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+
+    <div style="padding: 22px 24px 30px; font-size: 12.5px; color: rgba(255,255,255,0.38); line-height: 1.5;">Le réveil garde seize emplacements en mémoire. Seuls ceux qu'il affiche sur sa façade apparaissent ici.</div>
+  </div>
+  </sc-if>
+
+  <!-- ══════════ MODIFIER L'ALARME ══════════ -->
+  <sc-if value="{{ isAlarmEdit }}" hint-placeholder-val="{{ false }}">
+  <div class="scr">
+    <div style="display: flex; align-items: center; padding: 0 8px 10px; flex-shrink: 0;">
+      <div class="tap" onClick="{{ goAlarms }}" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+      </div>
+      <div style="flex-grow: 1; text-align: center; font-size: 17px; font-weight: 500;">Modifier l'alarme</div>
+      <div class="tap" onClick="{{ goAlarms }}" style="min-height: 44px; padding: 0 14px; display: flex; align-items: center; font-size: 15px; font-weight: 600; color: {{ accent }};">OK</div>
+    </div>
+
+    <div style="text-align: center; padding: 6px 0 22px; flex-shrink: 0;">
+      <div style="font-size: 56px; font-weight: 200; letter-spacing: -2px; line-height: 1;">{{ editTime }}</div>
+    </div>
+
+    <div class="glass" style="margin: 0 16px 14px; border-radius: 20px; overflow: hidden; flex-shrink: 0;">
+      <div class="tap row" onClick="{{ goDaysPick }}" style="padding: 15px 18px; min-height: 44px; box-sizing: border-box; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.055);">
+        <div style="font-size: 14.5px; font-weight: 500; flex-grow: 1;">Répéter</div>
+        <div style="font-size: 14.5px; color: rgba(255,255,255,0.62);">{{ editDays }}</div>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
+      </div>
+      <div class="tap row" onClick="{{ goSunPick }}" style="padding: 15px 18px; min-height: 44px; box-sizing: border-box; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.055);">
+        <div style="font-size: 14.5px; font-weight: 500; flex-grow: 1;">Thème du soleil</div>
+        <div style="font-size: 14.5px; color: rgba(255,255,255,0.62);">{{ alarmTheme }}</div>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
+      </div>
+      <div class="tap row" onClick="{{ goSoundAlarm }}" style="padding: 15px 18px; min-height: 44px; box-sizing: border-box; display: flex; align-items: center; gap: 12px;">
+        <div style="font-size: 14.5px; font-weight: 500; flex-grow: 1;">Son</div>
+        <div style="font-size: 14.5px; color: rgba(255,255,255,0.62);">{{ sound }}</div>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
+      </div>
+    </div>
+
+    <div style="padding: 0 22px 8px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.7px; text-transform: uppercase; color: {{ accent }}; flex-shrink: 0;">Au-delà de SleepMapper</div>
+    <div class="glass" style="margin: 0 16px 14px; border-radius: 20px; padding: 14px 18px 16px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;">
+      <div>
+        <div style="display: flex; align-items: baseline; justify-content: space-between;">
+          <div style="font-size: 14px; font-weight: 500;">Durée du lever de soleil</div>
+          <div style="font-size: 13.5px; font-weight: 600; color: {{ accent }};">{{ riseDur }} min</div>
+        </div>
+        <div class="sld" onPointerDown="{{ riseDown }}" onPointerMove="{{ riseMove }}" onPointerUp="{{ riseUp }}">
+          <div style="height: 6px; border-radius: 999px; background: rgba(255,255,255,0.1); position: relative;">
+            <div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{ risePct }}; background: {{ accent }}; border-radius: 999px;"></div>
+            <div class="knob" style="position: absolute; left: {{ risePct }}; top: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; border-radius: 50%; background: #ffffff;"></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="display: flex; align-items: baseline; justify-content: space-between;">
+          <div style="font-size: 14px; font-weight: 500;">Intensité du lever</div>
+          <div style="font-size: 13.5px; font-weight: 600; color: {{ accent }};">{{ riseLvl }} / 25</div>
+        </div>
+        <div class="sld" onPointerDown="{{ lvlDown }}" onPointerMove="{{ lvlMove }}" onPointerUp="{{ lvlUp }}">
+          <div style="height: 6px; border-radius: 999px; background: rgba(255,255,255,0.1); position: relative;">
+            <div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{ lvlPct }}; background: {{ accent }}; border-radius: 999px;"></div>
+            <div class="knob" style="position: absolute; left: {{ lvlPct }}; top: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; border-radius: 50%; background: #ffffff;"></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="display: flex; align-items: baseline; justify-content: space-between;">
+          <div style="font-size: 14px; font-weight: 500;">Volume</div>
+          <div style="font-size: 13.5px; font-weight: 600; color: {{ accent }};">{{ vol }} / 25</div>
+        </div>
+        <div class="sld" onPointerDown="{{ volDown }}" onPointerMove="{{ volMove }}" onPointerUp="{{ volUp }}">
+          <div style="height: 6px; border-radius: 999px; background: rgba(255,255,255,0.1); position: relative;">
+            <div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{ volPct }}; background: {{ accent }}; border-radius: 999px;"></div>
+            <div class="knob" style="position: absolute; left: {{ volPct }}; top: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; border-radius: 50%; background: #ffffff;"></div>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; min-height: 44px;">
+        <div style="font-size: 14px; font-weight: 500; flex-grow: 1;">Départ en douceur du son</div>
+        <div class="tap" onClick="{{ toggleSoft }}" style="width: 52px; height: 31px; border-radius: 999px; background: {{ softBg }}; display: flex; align-items: center; padding: 3px; box-sizing: border-box; justify-content: {{ softPos }};">
+          <div style="width: 25px; height: 25px; border-radius: 50%; background: #ffffff;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass" style="margin: 0 16px 14px; border-radius: 20px; padding: 16px 18px; flex-shrink: 0;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="{{ accent }}" stroke="none"><path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12z"></path></svg>
+        <div style="font-size: 14.5px; font-weight: 600; flex-grow: 1;">PowerWake</div>
+        <div class="tap" onClick="{{ togglePw }}" style="width: 52px; height: 31px; border-radius: 999px; background: {{ pwBg }}; display: flex; align-items: center; padding: 3px; box-sizing: border-box; justify-content: {{ pwPos }};">
+          <div style="width: 25px; height: 25px; border-radius: 50%; background: #ffffff;"></div>
+        </div>
+      </div>
+      <sc-if value="{{ pwOn }}" hint-placeholder-val="{{ true }}">
+        <div style="margin-top: 8px;">
+          <div style="display: flex; align-items: baseline; justify-content: space-between;">
+            <div style="font-size: 13.5px; color: rgba(255,255,255,0.62);">Sonne à {{ pwTime }}</div>
+            <div style="font-size: 13.5px; font-weight: 600; color: {{ accent }};">+{{ pwOffset }} min</div>
+          </div>
+          <div class="sld" onPointerDown="{{ pwDown }}" onPointerMove="{{ pwMove }}" onPointerUp="{{ pwUp }}">
+            <div style="height: 6px; border-radius: 999px; background: rgba(255,255,255,0.1); position: relative;">
+              <div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{ pwPct }}; background: {{ accent }}; border-radius: 999px;"></div>
+              <div class="knob" style="position: absolute; left: {{ pwPct }}; top: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; border-radius: 50%; background: #ffffff;"></div>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 11.5px; color: rgba(255,255,255,0.38);">
+            <div>1 min</div><div>30 min</div>
+          </div>
+        </div>
+      </sc-if>
+      <div style="margin-top: 10px; font-size: 12px; color: rgba(255,255,255,0.42); line-height: 1.45;">Sonnerie de secours, déclenchée après le lever de soleil.</div>
+    </div>
+
+    <div class="glass" style="margin: 0 16px 16px; border-radius: 20px; padding: 16px 18px; flex-shrink: 0;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between;">
+        <div style="font-size: 14.5px; font-weight: 600;">Durée du rappel</div>
+        <div style="font-size: 14.5px; font-weight: 600; color: {{ accent }};">{{ snooze }} min</div>
+      </div>
+      <div class="sld" onPointerDown="{{ snzDown }}" onPointerMove="{{ snzMove }}" onPointerUp="{{ snzUp }}">
+        <div style="height: 6px; border-radius: 999px; background: rgba(255,255,255,0.1); position: relative;">
+          <div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{ snzPct }}; background: {{ accent }}; border-radius: 999px;"></div>
+          <div class="knob" style="position: absolute; left: {{ snzPct }}; top: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; border-radius: 50%; background: #ffffff;"></div>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 11.5px; color: rgba(255,255,255,0.38);">
+        <div>1 min</div><div>20 min</div>
+      </div>
+      <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: rgba(255,255,255,0.5); line-height: 1.45;">Ce réglage vaut pour <strong style="font-weight: 600; color: rgba(255,255,255,0.72);">toutes les alarmes</strong> — le réveil n'en tient qu'un seul.</div>
+    </div>
+
+    <div class="tap" onClick="{{ deleteAlarm }}" style="margin: 0 16px 28px; min-height: 44px; border-radius: 16px; padding: 15px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 1px solid oklch(0.62 0.16 25 / 0.35); font-size: 15px; font-weight: 600; color: oklch(0.72 0.16 25); flex-shrink: 0;">Supprimer cette alarme</div>
+  </div>
+  </sc-if>
+
+  <!-- ══════════ HISTORIQUE (calendrier) ══════════ -->
+  <sc-if value="{{ isCalendar }}" hint-placeholder-val="{{ false }}">
+  <div class="scr">
+    <div style="display: flex; align-items: center; padding: 0 8px 8px; flex-shrink: 0;">
+      <div style="width: 44px;"></div>
+      <div style="flex-grow: 1; text-align: center; font-size: 19px; font-weight: 500;">Historique</div>
+      <div class="tap" onClick="{{ goSleep }}" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+      </div>
+    </div>
+
+    <div class="tap" onClick="{{ cycleCalMetric }}" style="margin: 0 auto 6px; padding: 8px 14px; min-height: 44px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 8px; flex-shrink: 0;">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17v-4a2 2 0 0 1 2-2h10a3 3 0 0 1 3 3v3"></path><path d="M3 17h18"></path><circle cx="7.5" cy="8.5" r="2"></circle></svg>
+      <div style="font-size: 17px; font-weight: 500;">{{ calMetric }}</div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.62)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+    </div>
+
+    <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 16px 14px; border-bottom: 1px solid rgba(255,255,255,0.07); flex-shrink: 0;">
+      <div class="tap" onClick="{{ prevMonth }}" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+      </div>
+      <div style="font-size: 19px; font-weight: 700;">{{ calMonth }}</div>
+      <div class="tap" onClick="{{ nextMonth }}" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; opacity: {{ nextMonthOpacity }};">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; padding: 16px 12px 8px; flex-shrink: 0;">
+      <sc-for list="{{ calHeads }}" as="hd" hint-placeholder-count="7">
+        <div style="text-align: center; font-size: 14px; color: rgba(255,255,255,0.5);">{{ hd.n }}</div>
+      </sc-for>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px 4px; padding: 0 12px;">
+      <sc-for list="{{ calDays }}" as="cd" hint-placeholder-count="35">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 5px 0; min-height: 44px;">
+          <div style="font-size: 13px; color: rgba(255,255,255,0.55);">{{ cd.num }}</div>
+          <sc-if value="{{ cd.has }}" hint-placeholder-val="{{ true }}">
+            <div style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: {{ cd.bg }}; border: {{ cd.border }};">
+              <div style="font-size: 11.5px; font-weight: 600; color: {{ cd.fg }};">{{ cd.val }}</div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ cd.empty }}" hint-placeholder-val="{{ false }}">
+            <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.045);"></div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="flex-grow: 1;"></div>
+    <div style="display: flex; gap: 18px; justify-content: center; padding: 16px 12px 26px; flex-shrink: 0;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div style="width: 17px; height: 17px; border-radius: 50%; background: #ffffff;"></div>
+        <div style="font-size: 12.5px; color: rgba(255,255,255,0.6);">Confirmé</div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div style="width: 17px; height: 17px; border-radius: 50%; border: 1.5px dashed oklch(0.78 0.13 68);"></div>
+        <div style="font-size: 12.5px; color: rgba(255,255,255,0.6);">Estimé</div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ══════════ RÉPÉTER LE ══════════ -->
+  <sc-if value="{{ isDaysPick }}" hint-placeholder-val="{{ false }}">
+  <div class="scr">
+    <div style="display: flex; align-items: center; padding: 0 8px 10px; flex-shrink: 0;">
+      <div class="tap" onClick="{{ goAlarmEdit }}" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+      </div>
+      <div style="flex-grow: 1; text-align: center; font-size: 19px; font-weight: 500;">Répéter le</div>
+      <div style="width: 44px;"></div>
+    </div>
+    <div style="padding: 8px 20px 22px; font-size: 16px; line-height: 1.4; flex-shrink: 0;">Quels jours voulez-vous répéter votre alarme ?</div>
+    <sc-for list="{{ weekDays }}" as="d" hint-placeholder-count="7">
+      <div class="tap row" onClick="{{ d.toggle }}" style="display: flex; align-items: center; padding: 18px 20px; min-height: 44px; box-sizing: border-box; border-top: 1px solid rgba(255,255,255,0.045);">
+        <div style="font-size: 16px; flex-grow: 1;">{{ d.name }}</div>
+        <sc-if value="{{ d.on }}" hint-placeholder-val="{{ true }}">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5 10-10"></path></svg>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+  </sc-if>
+
+  <!-- ══════════ SOLEIL (lever de l'alarme) ══════════ -->
+  <sc-if value="{{ isSunPick }}" hint-placeholder-val="{{ false }}">
+  <div class="scr">
+    <div style="display: flex; align-items: center; padding: 0 8px 10px; flex-shrink: 0;">
+      <div class="tap" onClick="{{ goAlarmEdit }}" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+      </div>
+      <div style="flex-grow: 1; text-align: center; font-size: 19px; font-weight: 500;">Soleil</div>
+      <div style="width: 44px;"></div>
+    </div>
+
+    <div style="padding: 6px 20px 18px; border-bottom: 1px solid rgba(255,255,255,0.07); flex-shrink: 0;">
+      <div style="font-size: 15px;">Durée : <strong style="font-weight: 700;">{{ riseDur }}</strong> min</div>
+      <div class="sld" onPointerDown="{{ riseDown }}" onPointerMove="{{ riseMove }}" onPointerUp="{{ riseUp }}">
+        <div style="height: 4px; border-radius: 999px; background: rgba(255,255,255,0.22); position: relative;">
+          <div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{ risePct }}; background: {{ accent }}; border-radius: 999px;"></div>
+          <div class="knob" style="position: absolute; left: {{ risePct }}; top: 50%; transform: translate(-50%, -50%); width: 24px; height: 24px; border-radius: 50%; background: #ffffff;"></div>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 13px; color: rgba(255,255,255,0.75);"><div>5 min</div><div>40 min</div></div>
+    </div>
+
+    <div style="padding: 16px 20px 18px; flex-shrink: 0;">
+      <div style="font-size: 15px;">Intensité lumineuse : <strong style="font-weight: 700;">{{ riseLvl }}</strong></div>
+      <div class="sld" onPointerDown="{{ lvlDown }}" onPointerMove="{{ lvlMove }}" onPointerUp="{{ lvlUp }}">
+        <div style="height: 4px; border-radius: 999px; background: rgba(255,255,255,0.22); position: relative;">
+          <div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{ lvlPct }}; background: {{ accent }}; border-radius: 999px;"></div>
+          <div class="knob" style="position: absolute; left: {{ lvlPct }}; top: 50%; transform: translate(-50%, -50%); width: 24px; height: 24px; border-radius: 50%; background: #ffffff;"></div>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 13px; color: rgba(255,255,255,0.75);"><div>1</div><div>25</div></div>
+    </div>
+
+    <sc-for list="{{ sunThemes }}" as="t" hint-placeholder-count="5">
+      <div class="tap row" onClick="{{ t.pick }}" style="display: flex; align-items: center; gap: 18px; padding: 14px 20px; min-height: 44px; box-sizing: border-box; background: {{ t.bg }};">
+        <div style="width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; background: {{ t.grad }}; border: {{ t.ring }};"></div>
+        <div style="font-size: 15.5px; flex-grow: 1;">{{ t.name }}</div>
+        <sc-if value="{{ t.on }}" hint-placeholder-val="{{ true }}">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5 10-10"></path></svg>
+        </sc-if>
+      </div>
+    </sc-for>
+
+    <div style="flex-grow: 1; min-height: 16px;"></div>
+    <div class="tap" onClick="{{ goAlarmEdit }}" style="margin: 0 16px 26px; min-height: 44px; padding: 15px; box-sizing: border-box; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: {{ accent }}; color: oklch(0.19 0.03 230); font-size: 15.5px; font-weight: 700; flex-shrink: 0;">Test sur l'appareil</div>
+  </div>
+  </sc-if>
+
+  <!-- ══════════ CHOISISSEZ UN SON ══════════ -->
+  <sc-if value="{{ isSoundPick }}" hint-placeholder-val="{{ false }}">
+  <div class="scr">
+    <div style="display: flex; align-items: center; padding: 0 8px 10px; flex-shrink: 0;">
+      <div class="tap" onClick="{{ backFromSound }}" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+      </div>
+      <div style="flex-grow: 1; text-align: center; font-size: 19px; font-weight: 500;">Choisissez un son</div>
+      <div style="width: 44px;"></div>
+    </div>
+
+    <div style="padding: 6px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.07); flex-shrink: 0;">
+      <div style="font-size: 15px;">Volume : <strong style="font-weight: 700;">{{ vol }}</strong></div>
+      <div class="sld" onPointerDown="{{ volDown }}" onPointerMove="{{ volMove }}" onPointerUp="{{ volUp }}">
+        <div style="height: 4px; border-radius: 999px; background: rgba(255,255,255,0.22); position: relative;">
+          <div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{ volPct }}; background: {{ accent }}; border-radius: 999px;"></div>
+          <div class="knob" style="position: absolute; left: {{ volPct }}; top: 50%; transform: translate(-50%, -50%); width: 24px; height: 24px; border-radius: 50%; background: #ffffff;"></div>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 13px; color: rgba(255,255,255,0.75);"><div>1</div><div>25</div></div>
+    </div>
+
+    <sc-for list="{{ soundList }}" as="so" hint-placeholder-count="10">
+      <div class="tap row" onClick="{{ so.pick }}" style="display: flex; align-items: center; gap: 12px; padding: 16px 20px; min-height: 44px; box-sizing: border-box; border-bottom: 1px solid rgba(255,255,255,0.045);">
+        <div style="font-size: 15.5px; flex-grow: 1;">{{ so.name }}</div>
+        <sc-if value="{{ so.isRadio }}" hint-placeholder-val="{{ false }}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
+        </sc-if>
+        <sc-if value="{{ so.on }}" hint-placeholder-val="{{ true }}">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5 10-10"></path></svg>
+        </sc-if>
+      </div>
+    </sc-for>
+    <div style="height: 26px; flex-shrink: 0;"></div>
+  </div>
+  </sc-if>
+
+  <!-- ══════════ COUCHER DE SOLEIL ══════════ -->
+  <sc-if value="{{ isSunset }}" hint-placeholder-val="{{ false }}">
+  <div class="scr">
+    <div style="display: flex; align-items: center; padding: 0 8px 10px; flex-shrink: 0;">
+      <div class="tap" onClick="{{ goDevice }}" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+      </div>
+      <div style="flex-grow: 1; text-align: center; font-size: 17px; font-weight: 500;">Coucher de soleil</div>
+      <div class="tap" onClick="{{ toggleSunsetCfg }}" style="min-height: 44px; padding: 0 14px; display: flex; align-items: center; font-size: 15px; font-weight: 500; color: {{ cfgColor }};">{{ cfgLabel }}</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 26px; padding: 18px 20px 0;">
+      <div style="position: relative; width: 226px; height: 226px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <div style="position: absolute; inset: -26px; border-radius: 50%; background: radial-gradient(circle, {{ duskGlow }} 0%, transparent 66%);"></div>
+        <div style="position: relative; width: 226px; height: 226px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.035); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M4.9 6.9l2.1 2.1M2 16h3M19 16h3M17 9l2.1-2.1"></path><path d="M8 16a4 4 0 0 1 8 0"></path><path d="M3 20h18"></path></svg>
+          <div style="font-size: 54px; font-weight: 200; letter-spacing: -2px; line-height: 1.05;">{{ duskDur }}:00</div>
+          <div style="font-size: 14px; color: rgba(255,255,255,0.55);">minutes</div>
+        </div>
+      </div>
+
+      <sc-if value="{{ sunsetCfg }}" hint-placeholder-val="{{ true }}">
+        <div class="glass" style="width: 100%; box-sizing: border-box; border-radius: 20px; padding: 14px 18px 16px; display: flex; flex-direction: column; gap: 6px;">
+          <div>
+            <div style="display: flex; align-items: baseline; justify-content: space-between;">
+              <div style="font-size: 14px; font-weight: 500;">Durée</div>
+              <div style="font-size: 13.5px; font-weight: 600; color: {{ accent }};">{{ duskDur }} min</div>
+            </div>
+            <div class="sld" onPointerDown="{{ duskDown }}" onPointerMove="{{ duskMove }}" onPointerUp="{{ duskUp }}">
+              <div style="height: 6px; border-radius: 999px; background: rgba(255,255,255,0.1); position: relative;">
+                <div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{ duskPct }}; background: {{ accent }}; border-radius: 999px;"></div>
+                <div class="knob" style="position: absolute; left: {{ duskPct }}; top: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; border-radius: 50%; background: #ffffff;"></div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div style="display: flex; align-items: baseline; justify-content: space-between;">
+              <div style="font-size: 14px; font-weight: 500;">Intensité lumineuse</div>
+              <div style="font-size: 13.5px; font-weight: 600; color: {{ accent }};">{{ duskLvl }} / 25</div>
+            </div>
+            <div class="sld" onPointerDown="{{ dlvDown }}" onPointerMove="{{ dlvMove }}" onPointerUp="{{ dlvUp }}">
+              <div style="height: 6px; border-radius: 999px; background: rgba(255,255,255,0.1); position: relative;">
+                <div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{ dlvPct }}; background: {{ accent }}; border-radius: 999px;"></div>
+                <div class="knob" style="position: absolute; left: {{ dlvPct }}; top: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; border-radius: 50%; background: #ffffff;"></div>
+              </div>
+            </div>
+          </div>
+          <div style="font-size: 12.5px; color: rgba(255,255,255,0.55); line-height: 1.45; padding: 6px 0 2px;">Choisissez un jeu de couleurs pour créer votre coucher de soleil personnel.</div>
+          <sc-for list="{{ duskThemes }}" as="t" hint-placeholder-count="4">
+            <div class="tap row" onClick="{{ t.pick }}" style="display: flex; align-items: center; gap: 14px; padding: 8px 2px; min-height: 44px; box-sizing: border-box; border-radius: 12px;">
+              <div style="width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; background: {{ t.grad }};"></div>
+              <div style="font-size: 14.5px; flex-grow: 1;">{{ t.name }}</div>
+              <sc-if value="{{ t.on }}" hint-placeholder-val="{{ true }}">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5 10-10"></path></svg>
+              </sc-if>
+            </div>
+          </sc-for>
+          <div style="margin-top: 6px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.07); font-size: 12.5px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: rgba(255,255,255,0.42);">Sons ambiants</div>
+          <sc-for list="{{ duskSounds }}" as="ds" hint-placeholder-count="6">
+            <div class="tap row" onClick="{{ ds.pick }}" style="display: flex; align-items: center; gap: 10px; padding: 6px 2px; min-height: 44px; box-sizing: border-box; border-radius: 12px;">
+              <div style="font-size: 14.5px; flex-grow: 1;">{{ ds.name }}</div>
+              <sc-if value="{{ ds.isRadio }}" hint-placeholder-val="{{ false }}">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
+              </sc-if>
+              <sc-if value="{{ ds.on }}" hint-placeholder-val="{{ true }}">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5 10-10"></path></svg>
+              </sc-if>
+            </div>
+          </sc-for>
+          <sc-if value="{{ duskHasSound }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top: 4px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.07);">
+              <div style="font-size: 14px;">Volume : <strong style="font-weight: 700;">{{ duskVol }}</strong></div>
+              <div class="sld" onPointerDown="{{ dvoDown }}" onPointerMove="{{ dvoMove }}" onPointerUp="{{ dvoUp }}">
+                <div style="height: 4px; border-radius: 999px; background: rgba(255,255,255,0.22); position: relative;">
+                  <div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{ dvoPct }}; background: {{ accent }}; border-radius: 999px;"></div>
+                  <div class="knob" style="position: absolute; left: {{ dvoPct }}; top: 50%; transform: translate(-50%, -50%); width: 22px; height: 22px; border-radius: 50%; background: #ffffff;"></div>
+                </div>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 11.5px; color: rgba(255,255,255,0.38);"><div>1</div><div>25</div></div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <div class="tap" onClick="{{ toggleDusk }}" style="width: 100%; box-sizing: border-box; min-height: 44px; padding: 15px; border-radius: 16px; display: flex; align-items: center; justify-content: center; background: {{ duskBg }}; border: 1px solid {{ duskBorder }}; font-size: 15.5px; font-weight: 600; color: {{ duskColor }};">{{ duskLabel }}</div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ══════════ MON SOMMEIL ══════════ -->
+  <sc-if value="{{ isSleep }}" hint-placeholder-val="{{ false }}">
+  <div class="scr">
+    <div style="padding: 4px 20px 14px; text-align: center; font-size: 19px; font-weight: 500; flex-shrink: 0;">Mon Sommeil</div>
+
+    <div style="display: flex; padding: 0 12px; border-bottom: 1px solid rgba(255,255,255,0.07); flex-shrink: 0;">
+      <div class="tap row" onClick="{{ goBed }}" style="flex-grow: 1; padding: 12px 8px 13px; text-align: center; font-size: 14.5px; font-weight: 500; color: {{ tabBedColor }}; border-bottom: 2px solid {{ tabBedLine }};">Temps au lit</div>
+      <div class="tap row" onClick="{{ goCond }}" style="flex-grow: 1; padding: 12px 8px 13px; text-align: center; font-size: 14.5px; font-weight: 500; color: {{ tabCondColor }}; border-bottom: 2px solid {{ tabCondLine }};">Conditions</div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 8px; padding: 14px 16px 6px; flex-shrink: 0;">
+      <div class="tap" onClick="{{ goCalendar }}" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="{{ accent }}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"></rect><path d="M3.5 9.5h17M8 3v3.5M16 3v3.5"></path></svg>
+      </div>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+        <div style="font-size: 14.5px; font-weight: 500;">{{ periodLabel }}</div>
+        <div style="font-size: 12px; color: rgba(255,255,255,0.46);">{{ periodSub }}</div>
+      </div>
+      <div class="tap" onClick="{{ cyclePeriod }}" style="display: flex; align-items: center; gap: 6px; padding: 8px 10px; min-height: 44px; box-sizing: border-box; flex-shrink: 0;">
+        <div style="font-size: 14.5px; font-weight: 500;">{{ periodName }}</div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.62)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+      </div>
+    </div>
+    <sc-if value="{{ isDayPeriod }}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; justify-content: space-between; padding: 0 16px 4px; flex-shrink: 0;">
+        <div class="tap" onClick="{{ prevNight }}" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.62)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+        </div>
+        <div class="tap" onClick="{{ nextNight }}" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; opacity: {{ nextOpacity }};">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.62)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- Vue agrégée : l'axe vertical est l'heure de la journée, pas la durée —
+         c'est ce qui fait voir la régularité des horaires. -->
+    <sc-if value="{{ isAggPeriod }}" hint-placeholder-val="{{ false }}">
+      <div class="glass" style="margin: 8px 16px 16px; border-radius: 20px; padding: 15px 17px; display: flex; gap: 13px; align-items: flex-start; flex-shrink: 0;">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="{{ accent }}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><rect x="2.5" y="7" width="19" height="12" rx="3"></rect><path d="M6 11.5h5M6 15h3"></path><circle cx="16.5" cy="13" r="2.5"></circle></svg>
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <div style="font-size: 13px; color: {{ accent }};">Durée moyenne passée au lit</div>
+          <div style="display: flex; align-items: baseline; gap: 7px;">
+            <div style="font-size: 26px; font-weight: 300;">{{ avgLabel }}</div>
+            <div style="width: 19px; height: 19px; border-radius: 50%; background: oklch(0.62 0.19 25); display: flex; align-items: center; justify-content: center; align-self: center;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"></path></svg>
+            </div>
+          </div>
+          <div style="font-size: 12.5px; color: rgba(255,255,255,0.6); line-height: 1.45;">{{ avgCompare }}</div>
+        </div>
+      </div>
+
+      <div style="padding: 0 14px; flex-shrink: 0;">
+        <div style="font-size: 17px; font-weight: 700; padding-bottom: 10px;">Temps au lit</div>
+        <svg width="384" height="288" viewBox="0 0 384 288" style="display: block;">
+          <sc-for list="{{ gridLines }}" as="g" hint-placeholder-count="13">
+            <text x="44" y="{{ g.y }}" text-anchor="end" fill="rgba(255,255,255,0.42)" font-size="10.5" font-family="Manrope, sans-serif">{{ g.label }}</text>
+          </sc-for>
+          <line x1="50" y1="262" x2="376" y2="262" stroke="rgba(255,255,255,0.18)" stroke-width="1"></line>
+          <sc-for list="{{ bars }}" as="b" hint-placeholder-count="7">
+            <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" rx="3" fill="{{ b.fill }}" stroke="{{ b.stroke }}" stroke-width="{{ b.sw }}" stroke-dasharray="{{ b.dash }}"></rect>
+            <text x="{{ b.cx }}" y="278" text-anchor="middle" fill="{{ b.labelColor }}" font-size="11.5" font-family="Manrope, sans-serif">{{ b.label }}</text>
+          </sc-for>
+        </svg>
+        <div style="display: flex; gap: 18px; justify-content: center; padding: 12px 0 4px;">
+          <div style="display: flex; align-items: center; gap: 7px;">
+            <div style="width: 13px; height: 13px; border-radius: 3px; background: #ffffff;"></div>
+            <div style="font-size: 12px; color: rgba(255,255,255,0.6);">Temps au lit confirmé</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 7px;">
+            <div style="width: 13px; height: 13px; border-radius: 3px; border: 1.5px dashed oklch(0.78 0.13 68);"></div>
+            <div style="font-size: 12px; color: rgba(255,255,255,0.6);">Temps au lit estimé</div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ showBed }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 24px; padding: 22px 20px 20px;">
+        <sc-if value="{{ nightEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="position: relative; width: 222px; height: 222px; display: flex; align-items: center; justify-content: center;">
+            <div style="width: 222px; height: 222px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.14); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17v-4a2 2 0 0 1 2-2h10a3 3 0 0 1 3 3v3"></path><path d="M3 17h18"></path><circle cx="7.5" cy="8.5" r="2"></circle></svg>
+              <div style="font-size: 46px; font-weight: 200; letter-spacing: 2px; color: rgba(255,255,255,0.4);">— —</div>
+              <div style="font-size: 14px; color: rgba(255,255,255,0.4);">Temps au lit</div>
+            </div>
+          </div>
+          <div style="font-size: 14px; line-height: 1.5; color: rgba(255,255,255,0.62); text-align: center;">Aucune heure de coucher ni de lever pour cette nuit. Le collecteur n'a rien reçu du réveil.</div>
+          <div class="tap" style="width: 100%; box-sizing: border-box; min-height: 44px; padding: 15px; border-radius: 16px; display: flex; align-items: center; justify-content: center; background: {{ accent }}; color: oklch(0.19 0.03 230); font-size: 15px; font-weight: 700;">Saisir les heures</div>
+        </sc-if>
+        <sc-if value="{{ nightFilled }}" hint-placeholder-val="{{ true }}">
+        <div style="position: relative; width: 222px; height: 222px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <div style="position: absolute; inset: -20px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 66%);"></div>
+          <div style="position: relative; width: 222px; height: 222px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.03); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17v-4a2 2 0 0 1 2-2h10a3 3 0 0 1 3 3v3"></path><path d="M3 17h18"></path><circle cx="7.5" cy="8.5" r="2"></circle></svg>
+            <div style="font-size: 54px; font-weight: 200; letter-spacing: -2px; line-height: 1.1;">{{ inBed }}</div>
+            <div style="font-size: 14px; color: rgba(255,255,255,0.55);">Temps au lit</div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; width: 100%;">
+          <div class="glass" style="flex-grow: 1; border-radius: 18px; padding: 14px; display: flex; flex-direction: column; align-items: center; gap: 5px;">
+            <div style="font-size: 12px; color: rgba(255,255,255,0.5);">Coucher</div>
+            <div style="font-size: 24px; font-weight: 300;">{{ bedTime }}</div>
+            <div style="font-size: 10.5px; font-weight: 600; letter-spacing: 0.4px; text-transform: uppercase; color: {{ confColor }};">{{ confLabel }}</div>
+          </div>
+          <div class="glass" style="flex-grow: 1; border-radius: 18px; padding: 14px; display: flex; flex-direction: column; align-items: center; gap: 5px;">
+            <div style="font-size: 12px; color: rgba(255,255,255,0.5);">Lever</div>
+            <div style="font-size: 24px; font-weight: 300;">{{ riseTime }}</div>
+            <div style="font-size: 10.5px; font-weight: 600; letter-spacing: 0.4px; text-transform: uppercase; color: {{ confColor }};">{{ confLabel }}</div>
+          </div>
+        </div>
+
+        <sc-if value="{{ hoursEdit }}" hint-placeholder-val="{{ true }}">
+          <div class="glass" style="width: 100%; box-sizing: border-box; border-radius: 18px; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="font-size: 14px; font-weight: 500; flex-grow: 1;">Coucher</div>
+              <div class="tap" onClick="{{ bedMinus }}" style="width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; font-size: 18px;">−</div>
+              <div class="tap" onClick="{{ bedPlus }}" style="width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; font-size: 18px;">+</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="font-size: 14px; font-weight: 500; flex-grow: 1;">Lever</div>
+              <div class="tap" onClick="{{ riseMinus }}" style="width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; font-size: 18px;">−</div>
+              <div class="tap" onClick="{{ risePlus }}" style="width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; font-size: 18px;">+</div>
+            </div>
+            <div style="font-size: 11.5px; color: rgba(255,255,255,0.4); line-height: 1.45;">Par pas de quinze minutes. La correction ne touche pas ce que le réveil a enregistré.</div>
+          </div>
+        </sc-if>
+
+        <div class="tap" onClick="{{ toggleHours }}" style="width: 100%; box-sizing: border-box; min-height: 44px; padding: 14px; border-radius: 16px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09); font-size: 14.5px; font-weight: 500;">{{ hoursLabel }}</div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ showCond }}" hint-placeholder-val="{{ true }}">
+      <div class="glass" style="margin: 14px 16px 20px; border-radius: 22px; overflow: hidden; flex-shrink: 0;">
+        <sc-for list="{{ measures }}" as="m" hint-placeholder-count="4">
+          <div class="tap row" onClick="{{ m.open }}" style="display: flex; align-items: center; gap: 14px; padding: 17px 18px; min-height: 44px; box-sizing: border-box; border-bottom: 1px solid rgba(255,255,255,0.055);">
+            <div style="width: 26px; flex-shrink: 0; display: flex; color: {{ m.color }};">
+              <sc-if value="{{ m.isTemp }}" hint-placeholder-val="{{ true }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V4.5a2.5 2.5 0 0 0-5 0v10.26a4.5 4.5 0 1 0 5 0z"></path></svg></sc-if>
+              <sc-if value="{{ m.isHum }}" hint-placeholder-val="{{ false }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.7l5.1 5.6a7 7 0 1 1-10.2 0z"></path></svg></sc-if>
+              <sc-if value="{{ m.isLux }}" hint-placeholder-val="{{ false }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"></path></svg></sc-if>
+              <sc-if value="{{ m.isSnd }}" hint-placeholder-val="{{ false }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h3.5L13 19V5L7.5 9z"></path><path d="M16.5 9.5a3.5 3.5 0 0 1 0 5"></path></svg></sc-if>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 3px; flex-grow: 1; min-width: 0;">
+              <div style="font-size: 15px; font-weight: 600;">{{ m.name }}</div>
+              <div style="font-size: 12.5px; color: rgba(255,255,255,0.5); line-height: 1.35;">{{ m.verdict }}</div>
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 2px; flex-shrink: 0;">
+              <div style="font-size: 25px; font-weight: 300; letter-spacing: -0.5px;">{{ m.value }}</div>
+              <div style="font-size: 13px; color: rgba(255,255,255,0.5);">{{ m.unit }}</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M9 18l6-6-6-6"></path></svg>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <div style="flex-grow: 1;"></div>
+
+    <!-- Commun aux deux onglets : ancré en bas, hors du contenu qui change -->
+    <div class="tap" onClick="{{ openSummary }}" style="margin: 0 16px 14px; border-radius: 16px; display: flex; align-items: center; justify-content: center; gap: 9px; padding: 15px 18px; min-height: 44px; box-sizing: border-box; background: rgba(255,255,255,0.055); border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="{{ accent }}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h8"></path></svg>
+      <div style="font-size: 14.5px; font-weight: 600; color: {{ accent }};">Copier le résumé de la nuit</div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ══════════ DÉTAIL D'UNE MESURE ══════════ -->
+  <sc-if value="{{ isDetail }}" hint-placeholder-val="{{ false }}">
+  <div class="scr">
+    <div style="display: flex; align-items: center; padding: 0 8px 6px; flex-shrink: 0;">
+      <div class="tap" onClick="{{ goSleep }}" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+      </div>
+      <div style="flex-grow: 1; text-align: center; font-size: 17px; font-weight: 500;">{{ dName }}</div>
+      <div style="width: 44px;"></div>
+    </div>
+    <div style="text-align: center; padding-bottom: 18px; flex-shrink: 0;">
+      <div style="font-size: 12.5px; color: rgba(255,255,255,0.46);">{{ nightLabel }} · {{ bedTime }} – {{ riseTime }}</div>
+    </div>
+
+    <div style="padding: 0 20px 6px; font-size: 15px; font-weight: 600; flex-shrink: 0;">{{ dTitle }}</div>
+
+    <div style="padding: 12px 12px 0; flex-shrink: 0;">
+      <svg width="388" height="212" viewBox="0 0 388 212" style="display: block;">
+        <defs>
+          <linearGradient id="okBand" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="{{ accent }}" stop-opacity="0.05"></stop>
+            <stop offset="50%" stop-color="{{ accent }}" stop-opacity="0.24"></stop>
+            <stop offset="100%" stop-color="{{ accent }}" stop-opacity="0.05"></stop>
+          </linearGradient>
+        </defs>
+        <line x1="44" y1="14" x2="376" y2="14" stroke="rgba(255,255,255,0.07)" stroke-width="1"></line>
+        <line x1="44" y1="59" x2="376" y2="59" stroke="rgba(255,255,255,0.07)" stroke-width="1"></line>
+        <line x1="44" y1="104" x2="376" y2="104" stroke="rgba(255,255,255,0.07)" stroke-width="1"></line>
+        <line x1="44" y1="149" x2="376" y2="149" stroke="rgba(255,255,255,0.07)" stroke-width="1"></line>
+        <text x="36" y="18" text-anchor="end" fill="rgba(255,255,255,0.4)" font-size="11" font-family="Manrope, sans-serif">26</text>
+        <text x="36" y="63" text-anchor="end" fill="rgba(255,255,255,0.4)" font-size="11" font-family="Manrope, sans-serif">23</text>
+        <text x="36" y="108" text-anchor="end" fill="rgba(255,255,255,0.4)" font-size="11" font-family="Manrope, sans-serif">20</text>
+        <text x="36" y="153" text-anchor="end" fill="rgba(255,255,255,0.4)" font-size="11" font-family="Manrope, sans-serif">17</text>
+        <rect x="44" y="104" width="332" height="45" fill="url(#okBand)"></rect>
+        <path d="M44 74 L74 78 L104 83 L134 87 L164 90 L188 92" fill="none" stroke="rgba(255,255,255,0.92)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+        <path d="M244 89 L274 86 L304 81 L334 76 L376 70" fill="none" stroke="rgba(255,255,255,0.92)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+        <rect x="188" y="14" width="56" height="135" fill="rgba(255,255,255,0.035)"></rect>
+        <line x1="188" y1="14" x2="188" y2="149" stroke="rgba(255,255,255,0.18)" stroke-width="1" stroke-dasharray="3 3"></line>
+        <line x1="244" y1="14" x2="244" y2="149" stroke="rgba(255,255,255,0.18)" stroke-width="1" stroke-dasharray="3 3"></line>
+        <text x="216" y="86" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10.5" font-family="Manrope, sans-serif">pas de</text>
+        <text x="216" y="99" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10.5" font-family="Manrope, sans-serif">relevé</text>
+        <line x1="44" y1="163" x2="376" y2="163" stroke="rgba(255,255,255,0.12)" stroke-width="1"></line>
+        <text x="44" y="180" fill="rgba(255,255,255,0.4)" font-size="11" font-family="Manrope, sans-serif">23:41</text>
+        <text x="160" y="180" fill="rgba(255,255,255,0.4)" font-size="11" font-family="Manrope, sans-serif">02:00</text>
+        <text x="260" y="180" fill="rgba(255,255,255,0.4)" font-size="11" font-family="Manrope, sans-serif">04:30</text>
+        <text x="376" y="180" text-anchor="end" fill="rgba(255,255,255,0.4)" font-size="11" font-family="Manrope, sans-serif">07:18</text>
+        <rect x="44" y="192" width="14" height="2.5" rx="1.25" fill="rgba(255,255,255,0.92)"></rect>
+        <text x="66" y="197" fill="rgba(255,255,255,0.62)" font-size="11.5" font-family="Manrope, sans-serif">Dans votre chambre</text>
+        <rect x="216" y="188" width="12" height="10" rx="2" fill="{{ accent }}" fill-opacity="0.3"></rect>
+        <text x="236" y="197" fill="rgba(255,255,255,0.62)" font-size="11.5" font-family="Manrope, sans-serif">Plage recommandée</text>
+      </svg>
+    </div>
+
+    <div style="display: flex; gap: 10px; padding: 8px 16px 0; flex-shrink: 0;">
+      <div class="glass" style="flex-grow: 1; border-radius: 16px; padding: 12px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+        <div style="font-size: 11.5px; color: rgba(255,255,255,0.48);">Minimum</div>
+        <div style="font-size: 19px; font-weight: 400;">20,1 °C</div>
+      </div>
+      <div class="glass" style="flex-grow: 1; border-radius: 16px; padding: 12px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+        <div style="font-size: 11.5px; color: rgba(255,255,255,0.48);">Moyenne</div>
+        <div style="font-size: 19px; font-weight: 400;">21,4 °C</div>
+      </div>
+      <div class="glass" style="flex-grow: 1; border-radius: 16px; padding: 12px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+        <div style="font-size: 11.5px; color: rgba(255,255,255,0.48);">Maximum</div>
+        <div style="font-size: 19px; font-weight: 400;">22,6 °C</div>
+      </div>
+    </div>
+
+    <div style="padding: 22px 20px 8px; font-size: 12.5px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: rgba(255,255,255,0.42); flex-shrink: 0;">Échelle</div>
+    <div class="glass" style="margin: 0 16px 28px; border-radius: 20px; padding: 16px 18px; display: flex; flex-direction: column; gap: 11px; flex-shrink: 0;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 5px; height: 20px; border-radius: 3px; background: rgba(255,255,255,0.22);"></div>
+        <div style="font-size: 13.5px; color: rgba(255,255,255,0.6); flex-grow: 1;">Trop chaud</div>
+        <div style="font-size: 13px; color: rgba(255,255,255,0.42);">22 °C et plus</div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 5px; height: 20px; border-radius: 3px; background: rgba(255,255,255,0.22);"></div>
+        <div style="font-size: 13.5px; font-weight: 600; flex-grow: 1;">Chaud</div>
+        <div style="font-size: 13px; color: rgba(255,255,255,0.42);">19 – 22 °C</div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 5px; height: 20px; border-radius: 3px; background: {{ accent }};"></div>
+        <div style="font-size: 13.5px; color: {{ accent }}; font-weight: 600; flex-grow: 1;">Conditions de sommeil idéales</div>
+        <div style="font-size: 13px; color: rgba(255,255,255,0.42);">17 – 19 °C</div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 5px; height: 20px; border-radius: 3px; background: rgba(255,255,255,0.22);"></div>
+        <div style="font-size: 13.5px; color: rgba(255,255,255,0.6); flex-grow: 1;">Froid</div>
+        <div style="font-size: 13px; color: rgba(255,255,255,0.42);">14 – 17 °C</div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 5px; height: 20px; border-radius: 3px; background: rgba(255,255,255,0.22);"></div>
+        <div style="font-size: 13.5px; color: rgba(255,255,255,0.6); flex-grow: 1;">Trop froid</div>
+        <div style="font-size: 13px; color: rgba(255,255,255,0.42);">moins de 14 °C</div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ══════════ FEUILLE : RÉSUMÉ POUR LE COACH ══════════ -->
+  <sc-if value="{{ summaryOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position: absolute; inset: 0; z-index: 20; display: flex; flex-direction: column; justify-content: flex-end; background: rgba(0,0,0,0.55);">
+    <div class="tap" onClick="{{ closeSummary }}" style="flex-grow: 1; border-radius: 0;"></div>
+    <div style="background: oklch(0.21 0.03 230); border-top: 1px solid rgba(255,255,255,0.12); border-radius: 26px 26px 0 0; padding: 10px 18px 26px; display: flex; flex-direction: column; gap: 14px; max-height: 78%;">
+      <div style="width: 40px; height: 4px; border-radius: 999px; background: rgba(255,255,255,0.2); align-self: center;"></div>
+      <div style="font-size: 16px; font-weight: 600;">Résumé de la nuit</div>
+      <div style="font-size: 12.5px; color: rgba(255,255,255,0.5); line-height: 1.45; margin-top: -8px;">Heures et conditions dans un seul texte, à coller au coach de Google Health.</div>
+      <div style="background: rgba(0,0,0,0.32); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; padding: 14px 15px; font-family: 'Manrope', monospace; font-size: 11.5px; line-height: 1.65; color: rgba(255,255,255,0.82); white-space: pre-line; overflow-y: auto;">{{ summaryText }}</div>
+      <div style="display: flex; gap: 10px;">
+        <div class="tap" onClick="{{ closeSummary }}" style="flex-grow: 1; min-height: 44px; padding: 14px; box-sizing: border-box; border-radius: 15px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.06); font-size: 14.5px; font-weight: 500;">Fermer</div>
+        <div class="tap" onClick="{{ doCopy }}" style="flex-grow: 1.4; min-height: 44px; padding: 14px; box-sizing: border-box; border-radius: 15px; display: flex; align-items: center; justify-content: center; background: {{ accent }}; color: oklch(0.19 0.03 230); font-size: 14.5px; font-weight: 700;">{{ copyLabel }}</div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ══════════ BARRE D'ONGLETS ══════════ -->
+  <sc-if value="{{ showTabs }}" hint-placeholder-val="{{ true }}">
+  <div style="display: flex; padding: 10px 8px 26px; gap: 6px; border-top: 1px solid rgba(255,255,255,0.07); background: rgba(255,255,255,0.02); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); flex-shrink: 0;">
+    <div class="tap" onClick="{{ goDevice }}" style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 6px 0; min-height: 44px; box-sizing: border-box; border-radius: 16px;">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="{{ navDeviceColor }}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><circle cx="12" cy="12" r="3"></circle></svg>
+      <div style="font-size: 11px; font-weight: {{ navDeviceWeight }}; color: {{ navDeviceColor }};">Mon Appareil</div>
+    </div>
+    <div class="tap" onClick="{{ goSleep }}" style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 6px 0; min-height: 44px; box-sizing: border-box; border-radius: 16px;">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="{{ navSleepColor }}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17v-4a2 2 0 0 1 2-2h10a3 3 0 0 1 3 3v3"></path><path d="M3 17h18"></path><circle cx="7.5" cy="8.5" r="2"></circle></svg>
+      <div style="font-size: 11px; font-weight: {{ navSleepWeight }}; color: {{ navSleepColor }};">Mon Sommeil</div>
+    </div>
+  </div>
+  </sc-if>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"accent":{"editor":"color","default":"#57c8c4","options":["#57c8c4","#7fb9e8","#8fd0a8","#c9b6f0"],"section":"Couleurs"},"$preview":{"width":412,"height":923}}'>
+/* Relevés dans SleepMapper les 5 et 6 septembre 2026 — docs/sleepmapper/16 à 24. */
+const THEMES = [
+  { n: 'Sunny day',     g: 'linear-gradient(180deg, #F7C05A 0%, #FDF0D5 100%)' },
+  { n: 'Island red',    g: 'linear-gradient(180deg, #F4671F 0%, #FCE6C4 100%)' },
+  { n: 'Nordic white',  g: 'linear-gradient(180deg, #B5AE7C 0%, #F0E9C8 100%)' },
+  { n: 'Caribbean red', g: 'linear-gradient(180deg, #F04A1E 0%, #F7A03C 100%)' },
+];
+// « No light » n'existe que pour le lever de soleil d'une alarme, pas pour le coucher.
+const NO_LIGHT = { n: 'No light', g: 'transparent' };
+const SOUNDS = ['FM radio', 'Forest Birds', 'Summer Birds', 'Buddha Wakeup', 'Morning Alps',
+                'Yoga Harmony', 'Nepal Bowls', 'Summer Lake', 'Ocean Waves', 'No sound'];
+const PERIODS = ['Jours', 'Semaine', 'Mois'];
+const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre'];
+const CAL_METRICS = ['Temps au lit', 'Température', 'Humidité', 'Lumière', 'Bruit'];
+// Axe vertical : l'heure de la journée, de midi à midi.
+const HOURS = ['12:00', '10:00', '08:00', '06:00', '04:00', '02:00', '00:00',
+               '22:00', '20:00', '18:00', '16:00', '14:00', '12:00'];
+/* Minutes depuis midi : 690 = 23:30, 1140 = 07:00 le lendemain. */
+const WEEK = [
+  { d: 'L', a: 690, b: 1140 }, { d: 'M', a: 705, b: 1150 }, { d: 'M', a: 730, b: 1145 },
+  { d: 'J', a: 710, b: 1140 }, { d: 'V', a: 700, b: 1160 },
+  { d: 'S', a: 780, b: 1349, est: true }, { d: 'D', none: true },
+];
+const MONTH = [
+  { d: 'sept. 01-06', a: 700, b: 1150 }, { d: '07-13', none: true },
+  { d: '14-20', none: true }, { d: '21-27', none: true }, { d: '28-30', none: true },
+];
+/* Un mois de démonstration : quelques nuits, un trou, deux estimées. */
+function buildMonth(m) {
+  const days = [31, 28, 31, 30, 31, 30, 31, 31, 30][m];
+  const first = [4, 0, 0, 3, 5, 1, 3, 6, 2][m];   // 0 = lundi
+  const dur = { 1: '7:57', 2: '9:01', 3: '8:35', 4: '9:30', 5: '7:58', 6: '7:43', 7: '8:03',
+                8: '8:26', 9: '7:44', 17: '7:04', 18: '8:08', 19: '7:08', 20: '10:08',
+                21: '10:16', 22: '7:44', 24: '7:42', 25: '8:11', 26: '9:44', 27: '7:52',
+                28: '6:27', 29: '9:27', 30: '7:27', 31: '6:38' };
+  const est = { 26: true, 31: true };
+  const out = [];
+  for (let i = 0; i < first; i++) out.push({ num: '', has: false, empty: false });
+  for (let d = 1; d <= days; d++) {
+    const v = m === 7 ? dur[d] : null;
+    out.push({
+      num: String(d), has: !!v, empty: !v, val: v || '',
+      bg: est[d] ? 'transparent' : '#ffffff',
+      fg: est[d] ? 'oklch(0.85 0.10 68)' : 'oklch(0.20 0.03 230)',
+      border: est[d] ? '1.5px dashed oklch(0.78 0.13 68)' : 'none',
+    });
+  }
+  return out;
+}
+// Liste distincte de celle de l'alarme : ambiances de fond, pas sons de réveil.
+const DUSK_SOUNDS = ['No sound', 'FM radio', 'Soft Rain', 'Ocean Waves', 'Under Water', 'Summer Lake'];
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      screen: 'device', tab: 'cond', metric: 'temp', drag: null,
+      period: 0, calMetric: 0, calMonth: 7,
+      lightOn: false, lightLevel: 14,
+      tracking: false, night: 0, hoursEdit: false, bedShift: 0, riseShift: 0,
+      alarms: [
+        { id: 1, h: 6, m: 50, days: 'Jours de la semaine', on: true, pw: true },
+        { id: 2, h: 9, m: 0, days: 'Tous les jours', on: false, pw: false },
+      ],
+      editing: 1, theme: 0, sound: 2, soundTarget: 'alarm', duskSound: 0,
+      days: [true, true, true, true, true, false, false],
+      riseDur: 30, riseLvl: 20, vol: 12, soft: true,
+      pwOffset: 5, snooze: 6,
+      dusk: 30, duskLvl: 18, duskTheme: 0, duskVol: 12,
+      duskRunning: false, sunsetCfg: false,
+      summaryOpen: false, copied: false,
+    };
+  }
+
+  /* Un curseur qu'on attrape : pointerdown pose la valeur, pointermove la suit
+     tant que le doigt est posé. setPointerCapture évite de perdre le geste
+     quand le doigt sort de la barre — c'est ce qui rend un slider utilisable
+     d'une main, dans le noir. */
+  slider(key, min, max, step) {
+    const apply = (e) => {
+      const r = e.currentTarget.getBoundingClientRect();
+      if (!r.width) return;
+      const t = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+      const v = Math.round((min + t * (max - min)) / step) * step;
+      this.setState({ [key]: Math.min(max, Math.max(min, v)) });
+    };
+    return {
+      down: (e) => {
+        try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) { /* souris */ }
+        this.setState({ drag: key });
+        apply(e);
+      },
+      move: (e) => { if (this.state.drag === key) apply(e); },
+      up: () => this.setState({ drag: null }),
+    };
+  }
+
+  hhmm(h, m) {
+    return String((h + 24) % 24).padStart(2, '0') + ':' + String((m + 60) % 60).padStart(2, '0');
+  }
+
+  renderVals() {
+    const s = this.state;
+    const accent = this.props.accent ?? '#57c8c4';
+    const dim = 'rgba(255,255,255,0.44)';
+    const off = 'rgba(255,255,255,0.16)';
+    const go = (screen) => () => this.setState({ screen });
+    const sw = (on) => ({ bg: on ? accent : off, pos: on ? 'flex-end' : 'flex-start' });
+
+    const light = this.slider('lightLevel', 0, 25, 1);
+    const rise = this.slider('riseDur', 5, 40, 5);
+    const lvl = this.slider('riseLvl', 1, 25, 1);
+    const vol = this.slider('vol', 0, 25, 1);
+    const pw = this.slider('pwOffset', 1, 30, 1);
+    const snz = this.slider('snooze', 1, 20, 1);
+    const dusk = this.slider('dusk', 5, 60, 5);
+    const dlv = this.slider('duskLvl', 0, 25, 1);
+    const dvo = this.slider('duskVol', 1, 25, 1);
+    const pct = (v, min, max) => Math.round(((v - min) / (max - min)) * 100) + '%';
+
+    const al = s.alarms.find((a) => a.id === s.editing) || s.alarms[0] || { h: 7, m: 0, days: 'Tous les jours', pw: false };
+    const pwT = this.hhmm(al.h + Math.floor((al.m + s.pwOffset) / 60), (al.m + s.pwOffset) % 60);
+
+    const nights = [
+      { label: 'Nuit du 4 au 5 septembre', sub: '23:41 – 07:18 · 61 relevés', bh: 23, bm: 41, rh: 7, rm: 18, len: '7:37' },
+      { label: 'Nuit du 3 au 4 septembre', sub: '00:12 – 07:02 · 55 relevés', bh: 0, bm: 12, rh: 7, rm: 2, len: '6:50' },
+      { label: 'Nuit du 2 au 3 septembre', sub: '23:58 – 08:04 · 64 relevés', bh: 23, bm: 58, rh: 8, rm: 4, len: '8:06', est: true },
+      { label: 'Nuit du 1er au 2 septembre', sub: 'aucun relevé', empty: true },
+    ];
+    const n = nights[s.night] || nights[0];
+    const bedTime = n.empty ? '—' : this.hhmm(n.bh, n.bm + s.bedShift * 15);
+    const riseTime = n.empty ? '—' : this.hhmm(n.rh, n.rm + s.riseShift * 15);
+
+    const M = [
+      { k: 'temp', name: 'Température', unit: '°C', value: '21,4', verdict: 'Chaud — au-dessus de la plage idéale', color: 'oklch(0.83 0.13 68)', title: 'Température moyenne (°C)', mn: '20,1', mx: '22,6' },
+      { k: 'hum', name: 'Humidité', unit: '%', value: '52', verdict: 'Conditions de sommeil idéales', color: accent, title: 'Hygrométrie moyenne (%)', mn: '48', mx: '55' },
+      { k: 'lux', name: 'Lumière', unit: 'lux', value: '3', verdict: 'Conditions de sommeil idéales', color: accent, title: 'Luminosité moyenne (lux)', mn: '0', mx: '14' },
+      { k: 'snd', name: 'Bruit', unit: 'dB', value: '34', verdict: 'Équivalent à une bibliothèque municipale', color: 'rgba(255,255,255,0.66)', title: 'Niveau sonore moyen (dB)', mn: '28', mx: '47' },
+    ];
+    const dm = M.find((m) => m.k === s.metric) || M[0];
+
+    /* Une nuit sans relevé produit quand même un texte : il dit ce qui manque
+       plutôt que de l'omettre — cadrage §3.F. */
+    const summaryText = n.empty
+      ? 'Coach, voici ma nuit à consigner.\n\n' +
+        '- ' + n.label + '\n' +
+        '- Aucune heure de coucher ni de lever enregistrée.\n' +
+        '- Aucun relevé de conditions pour cette nuit.'
+      : 'Coach, voici ma nuit à consigner.\n\n' +
+        '- ' + n.label + '\n' +
+        '- Couché : ' + bedTime + (n.est ? ' (estimé)' : '') + '\n' +
+        '- Levé : ' + riseTime + (n.est ? ' (estimé)' : '') + '\n' +
+        '- Temps au lit : ' + n.len.replace(':', ' h ') + '\n\n' +
+        'Conditions de la chambre (min / moyenne / max) :\n' +
+        M.map((m) => '- ' + m.name + ' : ' + m.mn + ' / ' + m.value + ' / ' + m.mx + ' ' + m.unit).join('\n');
+
+    return {
+      accent,
+      isDevice: s.screen === 'device', isAlarms: s.screen === 'alarms',
+      isAlarmEdit: s.screen === 'alarmEdit', isSunset: s.screen === 'sunset',
+      isSleep: s.screen === 'sleep', isDetail: s.screen === 'detail',
+      isSunPick: s.screen === 'sunPick', isSoundPick: s.screen === 'soundPick',
+      isDaysPick: s.screen === 'daysPick', isCalendar: s.screen === 'calendar',
+      showTabs: (s.screen === 'device' || s.screen === 'sleep') && !s.summaryOpen,
+      goDevice: go('device'), goAlarms: go('alarms'), goSunset: go('sunset'), goSleep: go('sleep'),
+      goAlarmEdit: go('alarmEdit'), goSunPick: go('sunPick'), goDaysPick: go('daysPick'),
+      goCalendar: go('calendar'),
+      goSoundAlarm: () => this.setState({ screen: 'soundPick', soundTarget: 'alarm' }),
+      backFromSound: go('alarmEdit'),
+
+      alarmSummary: s.alarms.filter((a) => a.on).length
+        ? s.alarms.filter((a) => a.on).map((a) => this.hhmm(a.h, a.m)).join(' · ')
+        : 'aucune alarme active',
+
+      trackLabel: s.tracking ? 'Je me lève' : 'Je me couche',
+      trackBg: s.tracking ? 'rgba(255,255,255,0.06)' : accent,
+      trackBorder: s.tracking ? 'rgba(255,255,255,0.16)' : 'transparent',
+      trackColor: s.tracking ? '#ffffff' : 'oklch(0.19 0.03 230)',
+      trackHint: s.tracking ? 'Suivi en cours depuis 23:41 — le réveil tient l’heure' : 'L’heure est enregistrée par le réveil, pas par le téléphone',
+      toggleTracking: () => this.setState({ tracking: !s.tracking }),
+
+      lightOn: s.lightOn, lightLevel: s.lightLevel, lightPct: pct(s.lightLevel, 0, 25),
+      lightIconColor: s.lightOn ? accent : 'rgba(255,255,255,0.72)',
+      switchBg: sw(s.lightOn).bg, switchPos: sw(s.lightOn).pos,
+      toggleLight: () => this.setState({ lightOn: !s.lightOn }),
+      raiseLight: () => this.setState({ lightLevel: Math.min(25, s.lightLevel + 1) }),
+      dimLight: () => this.setState({ lightLevel: Math.max(0, s.lightLevel - 1) }),
+      lightDown: light.down, lightMove: light.move, lightUp: light.up,
+
+      alarms: s.alarms.map((a) => ({
+        time: this.hhmm(a.h, a.m), days: a.days, pw: a.pw,
+        pwTime: this.hhmm(a.h + Math.floor((a.m + s.pwOffset) / 60), (a.m + s.pwOffset) % 60),
+        opacity: a.on ? '1' : '0.42',
+        bg: sw(a.on).bg, pos: sw(a.on).pos,
+        toggle: () => this.setState({ alarms: s.alarms.map((x) => x.id === a.id ? Object.assign({}, x, { on: !x.on }) : x) }),
+        open: () => this.setState({ screen: 'alarmEdit', editing: a.id }),
+      })),
+      addAlarm: () => {
+        const id = Math.max(0, ...s.alarms.map((a) => a.id)) + 1;
+        this.setState({ alarms: s.alarms.concat([{ id, h: 7, m: 30, days: 'Tous les jours', on: true, pw: false }]) });
+      },
+      deleteAlarm: () => this.setState({ alarms: s.alarms.filter((a) => a.id !== s.editing), screen: 'alarms' }),
+
+      editTime: this.hhmm(al.h, al.m),
+      editDays: (function (d) {
+        const n = d.filter(Boolean).length;
+        if (n === 0) return 'Jamais';
+        if (n === 7) return 'Tous les jours';
+        if (d[0] && d[1] && d[2] && d[3] && d[4] && !d[5] && !d[6]) return 'Jours de la semaine';
+        if (!d[0] && !d[1] && !d[2] && !d[3] && !d[4] && d[5] && d[6]) return 'Week-end';
+        return ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].filter((_, i) => d[i]).join(' ');
+      })(s.days),
+      duskTheme: THEMES[s.duskTheme % THEMES.length].n,
+      alarmTheme: THEMES.concat([NO_LIGHT])[s.theme].n,
+      sound: SOUNDS[s.sound % SOUNDS.length],
+
+      riseDur: s.riseDur, risePct: pct(s.riseDur, 5, 40), riseDown: rise.down, riseMove: rise.move, riseUp: rise.up,
+      riseLvl: s.riseLvl, lvlPct: pct(s.riseLvl, 1, 25), lvlDown: lvl.down, lvlMove: lvl.move, lvlUp: lvl.up,
+      vol: s.vol, volPct: pct(s.vol, 0, 25), volDown: vol.down, volMove: vol.move, volUp: vol.up,
+      softBg: sw(s.soft).bg, softPos: sw(s.soft).pos, toggleSoft: () => this.setState({ soft: !s.soft }),
+
+      pwOn: al.pw, pwBg: sw(al.pw).bg, pwPos: sw(al.pw).pos, pwTime: pwT, pwOffset: s.pwOffset,
+      pwPct: pct(s.pwOffset, 1, 30), pwDown: pw.down, pwMove: pw.move, pwUp: pw.up,
+      togglePw: () => this.setState({ alarms: s.alarms.map((x) => x.id === s.editing ? Object.assign({}, x, { pw: !x.pw }) : x) }),
+
+      snooze: s.snooze, snzPct: pct(s.snooze, 1, 20), snzDown: snz.down, snzMove: snz.move, snzUp: snz.up,
+
+      duskDur: s.dusk, duskPct: pct(s.dusk, 5, 60), duskDown: dusk.down, duskMove: dusk.move, duskUp: dusk.up,
+      duskLvl: s.duskLvl, dlvPct: pct(s.duskLvl, 0, 25), dlvDown: dlv.down, dlvMove: dlv.move, dlvUp: dlv.up,
+      duskVol: s.duskVol, dvoPct: pct(s.duskVol, 0, 25), dvoDown: dvo.down, dvoMove: dvo.move, dvoUp: dvo.up,
+      duskThemes: THEMES.map((t, i) => ({
+        name: t.n, grad: t.g, on: i === s.duskTheme,
+        pick: () => this.setState({ duskTheme: i }),
+      })),
+      sunThemes: THEMES.concat([NO_LIGHT]).map((t, i) => ({
+        name: t.n, grad: t.g, on: i === s.theme,
+        ring: t.g === 'transparent' ? '1px dashed rgba(255,255,255,0.25)' : 'none',
+        bg: i === s.theme ? 'rgba(255,255,255,0.05)' : 'transparent',
+        pick: () => this.setState({ theme: i }),
+      })),
+      soundList: SOUNDS.map((n, i) => ({
+        name: n, isRadio: n === 'FM radio',
+        on: i === s.sound,
+        pick: () => this.setState({ sound: i }),
+      })),
+      duskSounds: DUSK_SOUNDS.map((n, i) => ({
+        name: n, isRadio: n === 'FM radio', on: i === s.duskSound,
+        pick: () => this.setState({ duskSound: i }),
+      })),
+      duskHasSound: DUSK_SOUNDS[s.duskSound % DUSK_SOUNDS.length] !== 'No sound',
+      duskVol: s.duskVol, dvoPct: pct(s.duskVol, 1, 25),
+      dvoDown: dvo.down, dvoMove: dvo.move, dvoUp: dvo.up,
+      duskGlow: s.duskRunning ? 'oklch(0.72 0.14 68 / 0.4)' : 'rgba(255,255,255,0.07)',
+      duskBg: s.duskRunning ? 'rgba(255,255,255,0.06)' : accent,
+      duskBorder: s.duskRunning ? 'rgba(255,255,255,0.16)' : 'transparent',
+      duskColor: s.duskRunning ? '#ffffff' : 'oklch(0.19 0.03 230)',
+      duskLabel: s.duskRunning ? 'Arrêter' : 'Démarrer',
+      toggleDusk: () => this.setState({ duskRunning: !s.duskRunning }),
+      sunsetCfg: s.sunsetCfg,
+      cfgLabel: s.sunsetCfg ? 'Fermer' : 'Régler',
+      cfgColor: s.sunsetCfg ? accent : 'rgba(255,255,255,0.62)',
+      toggleSunsetCfg: () => this.setState({ sunsetCfg: !s.sunsetCfg }),
+
+      onBed: s.tab === 'bed', onCond: s.tab === 'cond',
+      showBed: s.tab === 'bed' && s.period === 0,
+      showCond: s.tab === 'cond' && s.period === 0,
+      isDayPeriod: s.period === 0, isAggPeriod: s.period > 0,
+      periodName: PERIODS[s.period],
+      cyclePeriod: () => this.setState({ period: (s.period + 1) % 3 }),
+      periodLabel: s.period === 0 ? n.label : (s.period === 1 ? 'août 31 – sept. 06, 2026' : 'septembre 2026'),
+      periodSub: s.period === 0 ? n.sub : (s.period === 1 ? '6 nuits relevées sur 7' : '6 nuits relevées'),
+      avgLabel: s.period === 1 ? '07 h 50' : '08 h 04',
+      avgCompare: s.period === 1
+        ? 'Inférieure à la moyenne de la semaine dernière, qui était de 08 h 08.'
+        : 'Inférieure à la moyenne du mois passé, qui était de 08 h 14.',
+      gridLines: HOURS.map((h, i) => ({ y: 22 + i * 20, label: h })),
+      bars: (s.period === 1 ? WEEK : MONTH).map((b, i, arr) => {
+        const span = 326 / arr.length;
+        const w = Math.min(34, span * 0.52);
+        const x = 50 + i * span + (span - w) / 2;
+        const y = (t) => 22 + (t / 1440) * 240;
+        return b.none
+          ? { x, y: 0, w, h: 0, fill: 'none', stroke: 'none', sw: 0, dash: '0',
+              cx: x + w / 2, label: b.d, labelColor: 'rgba(255,255,255,0.3)' }
+          : { x, y: y(b.a), w, h: Math.max(3, y(b.b) - y(b.a)),
+              fill: b.est ? 'oklch(0.78 0.13 68 / 0.18)' : '#ffffff',
+              stroke: b.est ? 'oklch(0.78 0.13 68)' : 'none',
+              sw: b.est ? 1.5 : 0, dash: b.est ? '4 3' : '0',
+              cx: x + w / 2, label: b.d, labelColor: 'rgba(255,255,255,0.62)' };
+      }),
+      calMetric: CAL_METRICS[s.calMetric],
+      cycleCalMetric: () => this.setState({ calMetric: (s.calMetric + 1) % CAL_METRICS.length }),
+      calMonth: MONTHS[s.calMonth] + ' 2026',
+      nextMonthOpacity: s.calMonth >= 8 ? '0.28' : '1',
+      prevMonth: () => this.setState({ calMonth: Math.max(0, s.calMonth - 1) }),
+      nextMonth: () => this.setState({ calMonth: Math.min(8, s.calMonth + 1) }),
+      calHeads: ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((n) => ({ n })),
+      calDays: buildMonth(s.calMonth),
+      goBed: () => this.setState({ tab: 'bed' }), goCond: () => this.setState({ tab: 'cond' }),
+      tabBedColor: s.tab === 'bed' ? accent : dim, tabCondColor: s.tab === 'cond' ? accent : dim,
+      tabBedLine: s.tab === 'bed' ? accent : 'transparent',
+      tabCondLine: s.tab === 'cond' ? accent : 'transparent',
+
+      nightLabel: n.label, nightSub: n.sub, inBed: n.len || '— —', bedTime, riseTime,
+      nightEmpty: !!n.empty, nightFilled: !n.empty,
+      confLabel: n.est ? 'estimé' : 'confirmé',
+      confColor: n.est ? 'oklch(0.78 0.13 68)' : 'rgba(255,255,255,0.34)',
+      weekDays: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'].map((name, i) => ({
+        name, on: s.days[i],
+        toggle: () => this.setState({ days: s.days.map((v, j) => j === i ? !v : v) }),
+      })),
+      nextOpacity: s.night === 0 ? '0.28' : '1',
+      prevNight: () => this.setState({ night: Math.min(nights.length - 1, s.night + 1), bedShift: 0, riseShift: 0 }),
+      nextNight: () => this.setState({ night: Math.max(0, s.night - 1), bedShift: 0, riseShift: 0 }),
+      hoursEdit: s.hoursEdit,
+      hoursLabel: s.hoursEdit ? 'Terminer' : 'Corriger les heures',
+      toggleHours: () => this.setState({ hoursEdit: !s.hoursEdit }),
+      bedMinus: () => this.setState({ bedShift: s.bedShift - 1 }),
+      bedPlus: () => this.setState({ bedShift: s.bedShift + 1 }),
+      riseMinus: () => this.setState({ riseShift: s.riseShift - 1 }),
+      risePlus: () => this.setState({ riseShift: s.riseShift + 1 }),
+
+      measures: M.map((m) => ({
+        name: m.name, unit: m.unit, value: m.value, verdict: m.verdict, color: m.color,
+        isTemp: m.k === 'temp', isHum: m.k === 'hum', isLux: m.k === 'lux', isSnd: m.k === 'snd',
+        open: () => this.setState({ screen: 'detail', metric: m.k }),
+      })),
+      dName: dm.name, dTitle: dm.title,
+
+      summaryOpen: s.summaryOpen, summaryText,
+      openSummary: () => this.setState({ summaryOpen: true, copied: false }),
+      closeSummary: () => this.setState({ summaryOpen: false }),
+      copyLabel: s.copied ? 'Copié' : 'Copier',
+      doCopy: () => {
+        try { navigator.clipboard.writeText(summaryText); } catch (e) { /* sandbox */ }
+        this.setState({ copied: true });
+      },
+
+      navDeviceColor: s.screen === 'device' ? accent : dim,
+      navSleepColor: s.screen === 'sleep' ? accent : dim,
+      navDeviceWeight: s.screen === 'device' ? '600' : '500',
+      navSleepWeight: s.screen === 'sleep' ? '600' : '500',
+    };
+  }
+}
+</script>
+</body>
+</html>

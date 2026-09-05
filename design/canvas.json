@@ -1,0 +1,48 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 412,
+      "h": 923,
+      "title": "Prototype — navigable",
+      "is_interactive": true
+    },
+    {
+      "file": "EtatsDegrades.dc.html",
+      "x": 552,
+      "y": 0,
+      "w": 412,
+      "h": 923,
+      "title": "États dégradés",
+      "is_interactive": true
+    }
+  ],
+  "annotations": [
+    {
+      "id": "brief",
+      "x": 0,
+      "y": -330,
+      "w": 964,
+      "text": "SleepMaxxer — maquettes\n\nFormat Pixel 10 : 412 × 923 dp (1080 × 2424 px). La bande de 44 px en haut est laissée vide — la barre de statut du système s'y dessine sur un vrai téléphone.\n\nDirection retenue : sobre. Le liquid glass a été écarté — sur un fond nuit uni il n'a rien à réfracter, et la lumière de l'écran pollue le capteur que l'application exploite."
+    },
+    {
+      "id": "note-proto",
+      "x": -440,
+      "y": -158,
+      "w": 412,
+      "text": "Prototype navigable — tout se clique\n\nLes sept écrans vivent dans cet artboard : la navigation a besoin d'un état partagé, et deux artboards ne partagent rien.\n\nParcours : la barre du bas bascule Mon Appareil ↔ Mon Sommeil. Depuis Mon Appareil : la carte Alarmes ouvre la liste, une alarme ouvre son édition, la carte Coucher de soleil ouvre le minuteur. La lumière s'allume et révèle son réglage. Le bouton « Je me couche » bascule en « Je me lève ». Depuis Mon Sommeil : les deux onglets, les flèches de nuit, et chaque mesure ouvre sa courbe."
+    },
+    {
+      "id": "note-degrade",
+      "x": 1020,
+      "y": -147,
+      "w": 412,
+      "text": "États dégradés — les trois scénarios\n\nLe sélecteur en pointillés est un outil de maquette, il n'existe pas dans l'application.\n\nLe point à vérifier : « réveil injoignable » n'est PAS une panne générique. Le collecteur répond, l'historique reste entièrement lisible, et seuls le temps réel et le pilotage tombent. C'est le cas limite le plus structurant du cadrage — un message d'erreur unique le masquerait."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}

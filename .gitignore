@@ -1,0 +1,10 @@
+# Captures de SleepMapper — données personnelles, dépôt public
+# Le relevé écrit (docs/sleepmapper/README.md) reste versionné, les images non.
+docs/sleepmapper/*.png
+docs/sleepmapper/*.jpg
+docs/sleepmapper/*.jpeg
+
+# Canvas publiés : ~2,5 Mo chacun (payload de l'éditeur). Se régénèrent depuis
+# les .dc.html et canvas.json par le helper du skill design.
+design/*.html
+!design/*.dc.html

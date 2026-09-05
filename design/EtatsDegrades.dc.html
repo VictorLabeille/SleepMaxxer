@@ -1,0 +1,222 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Manrope', 'Segoe UI', system-ui, sans-serif; }
+    a { color: oklch(0.74 0.11 195); text-decoration: none; }
+    a:hover { color: oklch(0.82 0.10 195); }
+    .tap { cursor: pointer; transition: background 150ms ease, opacity 150ms ease; }
+    .tap:active { opacity: 0.7; }
+    .glass { background: rgba(255,255,255,0.045); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.085); }
+  </style>
+</helmet>
+
+<div style="width: 412px; height: 923px; overflow: hidden; position: relative; background: linear-gradient(178deg, oklch(0.26 0.038 226) 0%, oklch(0.20 0.032 230) 42%, oklch(0.165 0.026 234) 100%); color: oklch(0.97 0.006 230); display: flex; flex-direction: column;">
+
+  <div style="height: 44px; flex-shrink: 0;"></div>
+
+  <!-- Sélecteur de scénario — outil de maquette, pas un élément de l'app -->
+  <div style="margin: 0 12px 4px; padding: 4px; display: flex; gap: 3px; border-radius: 14px; background: rgba(255,255,255,0.055); border: 1px dashed rgba(255,255,255,0.16);">
+    <div class="tap" onClick="{{ pick0 }}" style="flex-grow: 1; padding: 8px 4px; border-radius: 11px; text-align: center; font-size: 11.5px; font-weight: 600; background: {{ bg0 }}; color: {{ fg0 }};">Collecteur muet</div>
+    <div class="tap" onClick="{{ pick1 }}" style="flex-grow: 1; padding: 8px 4px; border-radius: 11px; text-align: center; font-size: 11.5px; font-weight: 600; background: {{ bg1 }}; color: {{ fg1 }};">Réveil injoignable</div>
+    <div class="tap" onClick="{{ pick2 }}" style="flex-grow: 1; padding: 8px 4px; border-radius: 11px; text-align: center; font-size: 11.5px; font-weight: 600; background: {{ bg2 }}; color: {{ fg2 }};">Hors domicile</div>
+  </div>
+  <div style="padding: 0 20px 14px; font-size: 10.5px; color: rgba(255,255,255,0.34); text-align: center;">Sélecteur de maquette — n'existe pas dans l'application</div>
+
+  <div style="flex-grow: 1; overflow: hidden; display: flex; flex-direction: column;">
+
+    <div style="padding: 4px 20px 14px; text-align: center; font-size: 19px; font-weight: 500;">{{ title }}</div>
+
+    <!-- Bandeau d'état -->
+    <div style="margin: 0 16px 18px; border-radius: 18px; padding: 16px 18px; background: {{ bannerBg }}; border: 1px solid {{ bannerBorder }}; display: flex; gap: 13px; align-items: flex-start;">
+      <div style="width: 22px; flex-shrink: 0; display: flex; color: {{ bannerIcon }}; padding-top: 1px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"></circle><path d="M12 7.6v5"></path><path d="M12 16.2h.01"></path></svg>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 5px; flex-grow: 1;">
+        <div style="font-size: 14.5px; font-weight: 600; line-height: 1.35;">{{ bannerTitle }}</div>
+        <div style="font-size: 12.5px; color: rgba(255,255,255,0.62); line-height: 1.5;">{{ bannerBody }}</div>
+      </div>
+    </div>
+
+    <!-- Ce qui reste disponible -->
+    <div style="padding: 0 20px 8px; font-size: 12.5px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: rgba(255,255,255,0.42);">{{ availTitle }}</div>
+
+    <div class="glass" style="margin: 0 16px 12px; border-radius: 20px; overflow: hidden;">
+      <div style="display: flex; align-items: center; gap: 13px; padding: 15px 18px; border-bottom: 1px solid rgba(255,255,255,0.055); opacity: {{ histOpacity }};">
+        <div style="width: 20px; flex-shrink: 0; display: flex; color: {{ histColor }};"><sc-if value="{{ histOk }}" hint-placeholder-val="{{ true }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5 10-10"></path></svg></sc-if><sc-if value="{{ histNo }}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></sc-if></div>
+        <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1;">
+          <div style="font-size: 14.5px; font-weight: 500;">Historique des nuits</div>
+          <div style="font-size: 12px; color: rgba(255,255,255,0.48);">{{ histNote }}</div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 13px; padding: 15px 18px; border-bottom: 1px solid rgba(255,255,255,0.055); opacity: {{ liveOpacity }};">
+        <div style="width: 20px; flex-shrink: 0; display: flex; color: {{ liveColor }};"><sc-if value="{{ liveOk }}" hint-placeholder-val="{{ true }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5 10-10"></path></svg></sc-if><sc-if value="{{ liveNo }}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></sc-if></div>
+        <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1;">
+          <div style="font-size: 14.5px; font-weight: 500;">Conditions en temps réel</div>
+          <div style="font-size: 12px; color: rgba(255,255,255,0.48);">{{ liveNote }}</div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 13px; padding: 15px 18px; opacity: {{ ctrlOpacity }};">
+        <div style="width: 20px; flex-shrink: 0; display: flex; color: {{ ctrlColor }};"><sc-if value="{{ ctrlOk }}" hint-placeholder-val="{{ true }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5 10-10"></path></svg></sc-if><sc-if value="{{ ctrlNo }}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></sc-if></div>
+        <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1;">
+          <div style="font-size: 14.5px; font-weight: 500;">Pilotage du réveil</div>
+          <div style="font-size: 12px; color: rgba(255,255,255,0.48);">{{ ctrlNote }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action -->
+    <div class="tap" style="margin: 4px 16px 0; min-height: 44px; padding: 15px; box-sizing: border-box; border-radius: 16px; display: flex; align-items: center; justify-content: center; gap: 9px; background: rgba(255,255,255,0.055); border: 1px solid rgba(255,255,255,0.1);">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="{{ accent }}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5A8 8 0 0 0 6.3 6.3L3 9.4"></path><path d="M4 12.5a8 8 0 0 0 13.7 5.2L21 14.6"></path><path d="M3 4.6v4.8h4.8M21 19.4v-4.8h-4.8"></path></svg>
+      <div style="font-size: 14.5px; font-weight: 600; color: {{ accent }};">{{ actionLabel }}</div>
+    </div>
+
+    <!-- Aperçu de la dernière nuit, si disponible -->
+    <sc-if value="{{ showCached }}" hint-placeholder-val="{{ true }}">
+      <div style="padding: 26px 20px 8px; font-size: 12.5px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: rgba(255,255,255,0.42);">{{ cachedTitle }}</div>
+      <div class="glass" style="margin: 0 16px; border-radius: 20px; padding: 18px; display: flex; flex-direction: column; gap: 15px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="font-size: 14px; font-weight: 600;">Nuit du 4 au 5 septembre</div>
+          <div style="font-size: 11.5px; padding: 4px 9px; border-radius: 999px; background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6);">{{ cachedBadge }}</div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 11px 6px; border-radius: 14px; background: rgba(255,255,255,0.035);">
+            <div style="font-size: 11px; color: rgba(255,255,255,0.46);">Au lit</div>
+            <div style="font-size: 17px; font-weight: 400;">7:37</div>
+          </div>
+          <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 11px 6px; border-radius: 14px; background: rgba(255,255,255,0.035);">
+            <div style="font-size: 11px; color: rgba(255,255,255,0.46);">Temp.</div>
+            <div style="font-size: 17px; font-weight: 400;">21,4 °C</div>
+          </div>
+          <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 11px 6px; border-radius: 14px; background: rgba(255,255,255,0.035);">
+            <div style="font-size: 11px; color: rgba(255,255,255,0.46);">Bruit</div>
+            <div style="font-size: 17px; font-weight: 400;">34 dB</div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <div style="flex-grow: 1;"></div>
+
+    <div style="display: flex; padding: 10px 0 26px; border-top: 1px solid rgba(255,255,255,0.07); background: rgba(255,255,255,0.02); flex-shrink: 0;">
+      <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 6px 0; min-height: 44px; box-sizing: border-box; opacity: {{ navDeviceOpacity }};">
+        <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.44)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><circle cx="12" cy="12" r="3"></circle></svg>
+        <div style="font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.44);">Mon Appareil</div>
+      </div>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 6px 0; min-height: 44px; box-sizing: border-box; opacity: {{ navSleepOpacity }};">
+        <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="{{ accent }}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17v-4a2 2 0 0 1 2-2h10a3 3 0 0 1 3 3v3"></path><path d="M3 17h18"></path><circle cx="7.5" cy="8.5" r="2"></circle></svg>
+        <div style="font-size: 11px; font-weight: 600; color: {{ accent }};">Mon Sommeil</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"accent":{"editor":"color","default":"#57c8c4","options":["#57c8c4","#7fb9e8","#8fd0a8","#c9b6f0"],"section":"Couleurs"},"$preview":{"width":412,"height":923}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { scenario: 0 };
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#57c8c4';
+    const n = this.state.scenario;
+    const amber = 'oklch(0.80 0.13 68)';
+    const green = 'oklch(0.78 0.15 148)';
+
+    const scenarios = [
+      {
+        title: 'Mon Sommeil',
+        bannerTitle: 'Le collecteur ne répond pas',
+        bannerBody: 'Somneo-Scraper est injoignable sur le réseau. Le réveil, lui, va peut-être très bien — mais rien ne peut être lu ni piloté tant que le collecteur est muet.',
+        availTitle: 'Ce qui reste disponible',
+        hist: [false, 'Rien en cache pour cette nuit'],
+        live: [false, 'Aucun relevé accessible'],
+        ctrl: [false, 'Le pilotage passe par le collecteur'],
+        action: 'Réessayer',
+        showCached: false,
+        cachedTitle: '', cachedBadge: '',
+      },
+      {
+        title: 'Mon Sommeil',
+        bannerTitle: 'Le réveil ne répond pas',
+        bannerBody: 'Le collecteur fonctionne et détient tout l’historique — il est lisible en entier. Seuls le temps réel et le pilotage sont indisponibles.',
+        availTitle: 'Ce qui reste disponible',
+        hist: [true, 'Toutes les nuits, jusqu’à la dernière collectée'],
+        live: [false, 'Le réveil n’est pas joignable'],
+        ctrl: [false, 'Alarmes et lumière indisponibles'],
+        action: 'Réessayer le réveil',
+        showCached: true,
+        cachedTitle: 'Dernière nuit collectée',
+        cachedBadge: 'complète',
+      },
+      {
+        title: 'Mon Sommeil',
+        bannerTitle: 'Hors du réseau domestique',
+        bannerBody: 'L’application ne sort jamais de la maison : le collecteur n’est pas exposé sur internet. Seule la dernière nuit chargée reste consultable.',
+        availTitle: 'Ce qui reste disponible',
+        hist: [false, 'Seule la nuit en cache est lisible'],
+        live: [false, 'Hors de portée du collecteur'],
+        ctrl: [false, 'Le réveil se pilote à la maison'],
+        action: 'Réessayer',
+        showCached: true,
+        cachedTitle: 'En cache sur ce téléphone',
+        cachedBadge: 'relevé du 5 sept.',
+      },
+    ];
+    const s = scenarios[n];
+    const pill = (i) => ({
+      bg: n === i ? 'rgba(255,255,255,0.14)' : 'transparent',
+      fg: n === i ? '#ffffff' : 'rgba(255,255,255,0.5)',
+    });
+    const p0 = pill(0), p1 = pill(1), p2 = pill(2);
+    const line = ([on, note]) => ({
+      ok: on, no: !on,
+      color: on ? green : 'rgba(255,255,255,0.34)',
+      opacity: on ? '1' : '0.55',
+      note,
+    });
+    const h = line(s.hist), l = line(s.live), c = line(s.ctrl);
+
+    return {
+      accent,
+      pick0: () => this.setState({ scenario: 0 }),
+      pick1: () => this.setState({ scenario: 1 }),
+      pick2: () => this.setState({ scenario: 2 }),
+      bg0: p0.bg, fg0: p0.fg, bg1: p1.bg, fg1: p1.fg, bg2: p2.bg, fg2: p2.fg,
+
+      title: s.title,
+      bannerTitle: s.bannerTitle,
+      bannerBody: s.bannerBody,
+      bannerBg: n === 1 ? 'rgba(255,255,255,0.045)' : 'oklch(0.80 0.13 68 / 0.10)',
+      bannerBorder: n === 1 ? 'rgba(255,255,255,0.1)' : 'oklch(0.80 0.13 68 / 0.28)',
+      bannerIcon: n === 1 ? 'rgba(255,255,255,0.6)' : amber,
+
+      availTitle: s.availTitle,
+      histOk: h.ok, histNo: h.no, histColor: h.color, histOpacity: h.opacity, histNote: h.note,
+      liveOk: l.ok, liveNo: l.no, liveColor: l.color, liveOpacity: l.opacity, liveNote: l.note,
+      ctrlOk: c.ok, ctrlNo: c.no, ctrlColor: c.color, ctrlOpacity: c.opacity, ctrlNote: c.note,
+
+      actionLabel: s.action,
+      showCached: s.showCached,
+      cachedTitle: s.cachedTitle,
+      cachedBadge: s.cachedBadge,
+
+      navDeviceOpacity: n === 1 ? '0.4' : '0.4',
+      navSleepOpacity: '1',
+    };
+  }
+}
+</script>
+</body>
+</html>
