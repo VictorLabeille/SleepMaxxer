@@ -196,6 +196,13 @@ Trois règles sans lesquelles cette fonction dérape :
 3. **Hors du réseau domestique, l'application est en lecture seule.** Aucun pilotage, aucune
    correction d'heure — le réveil est le dépositaire, et il est à la maison.
 
+**Remplacer un collecteur mort : à la main, depuis le Drive** (tranché le 2026-09-06).
+L'application ne repeuple jamais un collecteur neuf. La règle « le téléphone n'écrit jamais
+dans la mémoire » n'a donc **aucune exception**, et le backend n'a besoin d'aucun point
+d'entrée d'écriture en masse — ce qui lui épargne le seul endroit où il aurait pu recevoir des
+données non vérifiées. Le rôle de filet de sécurité repose sur l'export Drive, dont c'est la
+raison d'être : le téléphone sert à consulter, le fichier sert à restaurer.
+
 > **Conséquence pour le backend, à intégrer dès sa conception** : l'API du collecteur doit
 > exposer un point d'entrée « tout ce qui est arrivé depuis telle date », paginé. Ajouté après
 > coup, il obligerait à retoucher le schéma de la base.
@@ -453,11 +460,6 @@ du backend.
 
 ## 6. Questions ouvertes / à trancher
 
-- [ ] **Le téléphone peut-il re-remplir un collecteur neuf ?** C'est la question qui décide si
-      la copie locale est un vrai backup ou seulement une lecture de secours. Y répondre « oui »
-      suppose un point d'entrée d'écriture en masse côté collecteur, donc une brèche dans la
-      règle « le téléphone n'écrit jamais dans la mémoire ». À trancher au cadrage du backend,
-      pas ici — mais à ne pas oublier, c'est le jour où la carte meurt que ça se saura.
 - [ ] **Seuil du rappel de sauvegarde.** Compté en jours, en nuits accumulées, ou en volume
       non exporté ? Commit & Push compte en séances ; ici la donnée arrive toute seule, sans
       geste, donc un compte en jours est probablement plus juste.
