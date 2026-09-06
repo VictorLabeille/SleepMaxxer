@@ -10,7 +10,9 @@ relaie.
 
 Stack prévue : **Expo** · React Native · TypeScript.
 
-> **État : cadrage fonctionnel validé, code non commencé.** Prochaine étape : les maquettes.
+> **État : cadrage fonctionnel validé, maquettes livrées, code non commencé.**
+> Prochaine étape : le cadrage puis l'écriture du backend, dont l'API doit répondre à ce que
+> les maquettes demandent.
 
 ## Pourquoi
 
@@ -57,6 +59,7 @@ Somneo HF3671/01  ←→  Somneo-Scraper (Radxa Zero, 24/7)  ←→  SleepMaxxer
 | Chemin | Contenu |
 | --- | --- |
 | `.claude/specs/` | Cadrages fonctionnels datés — périmètre, cas limites, décisions et leurs raisons |
+| `design/*.dc.html` | Maquettes : prototype navigable et états dégradés, sources du canvas |
 | `docs/seuils-conditions-sommeil.md` | Seuils de qualité du sommeil relevés dans SleepMapper avant la coupure |
 | `docs/sleepmapper/README.md` | Relevé écrit de l'interface remplacée, écran par écran |
 | `AGENTS.md` | Conventions du dépôt, à l'usage des contributeurs et des agents |

@@ -14,6 +14,7 @@
 | Ce qui est dans le périmètre et ce qui n'y est pas, **et pourquoi** | `.claude/specs/2026-09-05-spec-fonctionnelle-sleepmaxxer.md` |
 | Les seuils de qualité du sommeil et leur provenance | `docs/seuils-conditions-sommeil.md` |
 | À quoi ressemblait l'interface remplacée | `docs/sleepmapper/README.md` |
+| À quoi ressemble l'application, écran par écran | `design/Main.dc.html`, `design/EtatsDegrades.dc.html` |
 | Protocole du réveil, champs, pièges matériels | `docs/somneo-api.md` **du dépôt Somneo-Scraper** |
 
 Le code applicatif n'est pas commencé. Sa structure sera arrêtée par la session qui l'écrira,
@@ -51,6 +52,13 @@ puis **reportée ici et dans la note Obsidian**.
   jamais supprimer le dossier.
 - **Les seuils de `docs/seuils-conditions-sommeil.md` ne viennent d'aucune API** et
   disparaîtront avec SleepMapper. Ce fichier est leur seule trace.
+- **`design/*.html` n'est pas versionné, `design/*.dc.html` l'est.** Les canvas publiés pèsent
+  ~2,5 Mo chacun — c'est le code de l'éditeur, pas la maquette. Ils se **régénèrent** depuis les
+  `.dc.html` et `canvas.json`. Modifier une maquette, c'est modifier un `.dc.html`, jamais le
+  `.html` produit — et jamais les deux, la régénération écrase.
+- **Le prototype tient dans un seul artboard.** Les dix écrans de `Main.dc.html` partagent un
+  état ; deux artboards ne partagent rien. Ne pas « ranger » un écran dans un fichier à part :
+  la navigation cesserait de fonctionner.
 
 ## Dépôt public
 
