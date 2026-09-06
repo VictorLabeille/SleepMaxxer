@@ -32,14 +32,14 @@
       "x": -440,
       "y": -158,
       "w": 412,
-      "text": "Prototype navigable — tout se clique\n\nLes sept écrans vivent dans cet artboard : la navigation a besoin d'un état partagé, et deux artboards ne partagent rien.\n\nParcours : la barre du bas bascule Mon Appareil ↔ Mon Sommeil. Depuis Mon Appareil : la carte Alarmes ouvre la liste, une alarme ouvre son édition, la carte Coucher de soleil ouvre le minuteur. La lumière s'allume et révèle son réglage. Le bouton « Je me couche » bascule en « Je me lève ». Depuis Mon Sommeil : les deux onglets, les flèches de nuit, et chaque mesure ouvre sa courbe."
+      "text": "Prototype navigable — tout se clique\n\nLes dix écrans vivent dans cet artboard : la navigation a besoin d'un état partagé, et deux artboards ne partagent rien.\n\nParcours : la barre du bas bascule Mon Appareil ↔ Mon Sommeil. Depuis Mon Appareil : la carte Alarmes ouvre la liste, une alarme ouvre son édition, la carte Coucher de soleil ouvre le minuteur. La lumière s'allume et révèle son réglage. Le bouton « Je me couche » bascule en « Je me lève ». Depuis Mon Sommeil : les deux onglets, les flèches de nuit, chaque mesure ouvre sa courbe, et l'icône de calendrier ouvre l'historique — où toucher un jour ouvre la nuit de ce jour.\n\nToute heure se règle à la roue : celle d'une alarme, le coucher et le lever d'une nuit. Une correction fait passer la nuit en « estimé », et un lever antérieur au coucher est refusé plutôt que corrigé en douce."
     },
     {
       "id": "note-degrade",
       "x": 1020,
       "y": -147,
       "w": 412,
-      "text": "États dégradés — les trois scénarios\n\nLe sélecteur en pointillés est un outil de maquette, il n'existe pas dans l'application.\n\nLe point à vérifier : « réveil injoignable » n'est PAS une panne générique. Le collecteur répond, l'historique reste entièrement lisible, et seuls le temps réel et le pilotage tombent. C'est le cas limite le plus structurant du cadrage — un message d'erreur unique le masquerait."
+      "text": "États dégradés — les trois scénarios\n\nLe sélecteur en pointillés est un outil de maquette, il n'existe pas dans l'application.\n\nDepuis que le téléphone détient une copie complète de l'historique (2026-09-06), l'historique n'est plus ce qui tombe : il reste lisible dans les trois cas. Ce qui les distingue, c'est le rattrapage — d'où le rang qui lui est propre.\n\nLe point à vérifier : « réveil injoignable » n'est PAS une panne générique. Le collecteur répond, l'historique est à jour, et seuls le temps réel et le pilotage tombent. C'est le cas limite le plus structurant du cadrage — un message d'erreur unique le masquerait. Une seule des trois situations est une panne : l'ambre lui est réservé."
     }
   ],
   "launch": {
