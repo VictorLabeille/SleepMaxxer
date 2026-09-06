@@ -20,6 +20,10 @@
     .tap:hover { background: rgba(255, 255, 255, 0.045); }
     .tap:active { opacity: 0.72; }
     .row { border-radius: 0; }
+    /* Zone tactile sans fond au survol : sur un grand bloc, le survol pèse
+       plus qu'il n'indique. L'enfoncement suffit à dire que ça se touche. */
+    .tapq { cursor: pointer; transition: opacity 150ms ease; }
+    .tapq:active { opacity: 0.72; }
     .glass { background: rgba(255,255,255,0.045); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.085); }
     /* min-height: 0 est indispensable — sans lui un enfant flex refuse de
        rétrécir sous son contenu, overflow-y ne scrolle pas, et la page est
@@ -28,6 +32,10 @@
     .scr::-webkit-scrollbar { width: 0; }
     .sld { cursor: grab; touch-action: none; padding: 12px 0; }
     .sld:active { cursor: grabbing; }
+    /* Colonne de roue : touch-action none, sans quoi le geste vertical est
+       mangé par le défilement de la feuille avant d'atteindre la roue. */
+    .whl { cursor: grab; touch-action: none; }
+    .whl:active { cursor: grabbing; }
     .knob { box-shadow: 0 2px 8px rgba(0,0,0,0.45); }
   </style>
 </helmet>
@@ -164,8 +172,9 @@
       <div class="tap" onClick="{{ goAlarms }}" style="min-height: 44px; padding: 0 14px; display: flex; align-items: center; font-size: 15px; font-weight: 600; color: {{ accent }};">OK</div>
     </div>
 
-    <div style="text-align: center; padding: 6px 0 22px; flex-shrink: 0;">
+    <div class="tapq" onClick="{{ openAlarmPick }}" style="text-align: center; padding: 6px 0 16px; flex-shrink: 0;">
       <div style="font-size: 56px; font-weight: 200; letter-spacing: -2px; line-height: 1;">{{ editTime }}</div>
+      <div style="font-size: 12px; color: rgba(255,255,255,0.42); padding-top: 8px;">Touchez l'heure pour la régler</div>
     </div>
 
     <div class="glass" style="margin: 0 16px 14px; border-radius: 20px; overflow: hidden; flex-shrink: 0;">
@@ -316,8 +325,8 @@
 
     <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px 4px; padding: 0 12px;">
       <sc-for list="{{ calDays }}" as="cd" hint-placeholder-count="35">
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 5px 0; min-height: 44px;">
-          <div style="font-size: 13px; color: rgba(255,255,255,0.55);">{{ cd.num }}</div>
+        <div class="{{ cd.cls }}" onClick="{{ cd.pick }}" style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 5px 0; min-height: 44px; border-radius: 14px;">
+          <div style="font-size: 13px; color: {{ cd.numColor }};">{{ cd.num }}</div>
           <sc-if value="{{ cd.has }}" hint-placeholder-val="{{ true }}">
             <div style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: {{ cd.bg }}; border: {{ cd.border }};">
               <div style="font-size: 11.5px; font-weight: 600; color: {{ cd.fg }};">{{ cd.val }}</div>
@@ -565,7 +574,7 @@
     </div>
     <sc-if value="{{ isDayPeriod }}" hint-placeholder-val="{{ true }}">
       <div style="display: flex; justify-content: space-between; padding: 0 16px 4px; flex-shrink: 0;">
-        <div class="tap" onClick="{{ prevNight }}" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+        <div class="tap" onClick="{{ prevNight }}" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; opacity: {{ prevOpacity }};">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.62)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
         </div>
         <div class="tap" onClick="{{ nextNight }}" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; opacity: {{ nextOpacity }};">
@@ -627,7 +636,7 @@
             </div>
           </div>
           <div style="font-size: 14px; line-height: 1.5; color: rgba(255,255,255,0.62); text-align: center;">Aucune heure de coucher ni de lever pour cette nuit. Le collecteur n'a rien reçu du réveil.</div>
-          <div class="tap" style="width: 100%; box-sizing: border-box; min-height: 44px; padding: 15px; border-radius: 16px; display: flex; align-items: center; justify-content: center; background: {{ accent }}; color: oklch(0.19 0.03 230); font-size: 15px; font-weight: 700;">Saisir les heures</div>
+          <div class="tap" onClick="{{ openBedPick }}" style="width: 100%; box-sizing: border-box; min-height: 44px; padding: 15px; border-radius: 16px; display: flex; align-items: center; justify-content: center; background: {{ accent }}; color: oklch(0.19 0.03 230); font-size: 15px; font-weight: 700;">Saisir les heures</div>
         </sc-if>
         <sc-if value="{{ nightFilled }}" hint-placeholder-val="{{ true }}">
         <div style="position: relative; width: 222px; height: 222px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
@@ -653,18 +662,18 @@
         </div>
 
         <sc-if value="{{ hoursEdit }}" hint-placeholder-val="{{ true }}">
-          <div class="glass" style="width: 100%; box-sizing: border-box; border-radius: 18px; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <div style="font-size: 14px; font-weight: 500; flex-grow: 1;">Coucher</div>
-              <div class="tap" onClick="{{ bedMinus }}" style="width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; font-size: 18px;">−</div>
-              <div class="tap" onClick="{{ bedPlus }}" style="width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; font-size: 18px;">+</div>
+          <div class="glass" style="width: 100%; box-sizing: border-box; border-radius: 18px; padding: 4px 6px 10px; display: flex; flex-direction: column;">
+            <div class="tap row" onClick="{{ openBedPick }}" style="padding: 14px 12px; min-height: 44px; box-sizing: border-box; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.055);">
+              <div style="font-size: 14px; font-weight: 500; flex-grow: 1;">Heure de coucher</div>
+              <div style="font-size: 18px; font-weight: 300;">{{ bedTime }}</div>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
             </div>
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <div style="font-size: 14px; font-weight: 500; flex-grow: 1;">Lever</div>
-              <div class="tap" onClick="{{ riseMinus }}" style="width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; font-size: 18px;">−</div>
-              <div class="tap" onClick="{{ risePlus }}" style="width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; font-size: 18px;">+</div>
+            <div class="tap row" onClick="{{ openRisePick }}" style="padding: 14px 12px; min-height: 44px; box-sizing: border-box; display: flex; align-items: center; gap: 12px;">
+              <div style="font-size: 14px; font-weight: 500; flex-grow: 1;">Heure de lever</div>
+              <div style="font-size: 18px; font-weight: 300;">{{ riseTime }}</div>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
             </div>
-            <div style="font-size: 11.5px; color: rgba(255,255,255,0.4); line-height: 1.45;">Par pas de quinze minutes. La correction ne touche pas ce que le réveil a enregistré.</div>
+            <div style="font-size: 11.5px; color: rgba(255,255,255,0.4); line-height: 1.45; padding: 12px 12px 2px;">La correction ne touche pas ce que le réveil a enregistré.</div>
           </div>
         </sc-if>
 
@@ -806,6 +815,50 @@
   </div>
   </sc-if>
 
+  <!-- ══════════ FEUILLE : ROUE DE SÉLECTION D'UNE HEURE ══════════ -->
+  <!-- Une seule feuille pour les trois heures réglables — celle d'une alarme,
+       le coucher et le lever d'une nuit. `pickKind` dit à qui la validation
+       s'applique ; la cohérence coucher/lever n'est vérifiée qu'à la fin. -->
+  <sc-if value="{{ pickOn }}" hint-placeholder-val="{{ false }}">
+  <div style="position: absolute; inset: 0; z-index: 22; display: flex; flex-direction: column; justify-content: flex-end; background: rgba(0,0,0,0.55);">
+    <div class="tap" onClick="{{ pickCancel }}" style="flex-grow: 1; border-radius: 0;"></div>
+    <div style="background: oklch(0.21 0.03 230); border-top: 1px solid rgba(255,255,255,0.12); border-radius: 26px 26px 0 0; padding: 10px 18px 26px; display: flex; flex-direction: column; gap: 13px;">
+      <div style="width: 40px; height: 4px; border-radius: 999px; background: rgba(255,255,255,0.2); align-self: center;"></div>
+      <div style="font-size: 16px; font-weight: 600;">{{ pickTitle }}</div>
+
+      <div style="position: relative; display: flex; align-items: center; justify-content: center; gap: 2px;">
+        <!-- Bande du rang retenu, dessinée sous les deux colonnes -->
+        <div style="position: absolute; left: 30px; right: 30px; top: 50%; transform: translateY(-50%); height: 46px; border-radius: 14px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);"></div>
+
+        <div class="whl" onPointerDown="{{ hDown }}" onPointerMove="{{ hMove }}" onPointerUp="{{ hUp }}" style="position: relative; width: 92px; height: 210px; display: flex; flex-direction: column;">
+          <sc-for list="{{ hourRows }}" as="r" hint-placeholder-count="5">
+            <div class="tap" onClick="{{ r.pick }}" style="height: 42px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: {{ r.size }}; font-weight: {{ r.weight }}; opacity: {{ r.opacity }}; letter-spacing: -1px;">{{ r.label }}</div>
+          </sc-for>
+        </div>
+
+        <div style="position: relative; font-size: 26px; font-weight: 300; color: rgba(255,255,255,0.45); padding-bottom: 4px;">:</div>
+
+        <div class="whl" onPointerDown="{{ mDown }}" onPointerMove="{{ mMove }}" onPointerUp="{{ mUp }}" style="position: relative; width: 92px; height: 210px; display: flex; flex-direction: column;">
+          <sc-for list="{{ minRows }}" as="r" hint-placeholder-count="5">
+            <div class="tap" onClick="{{ r.pick }}" style="height: 42px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: {{ r.size }}; font-weight: {{ r.weight }}; opacity: {{ r.opacity }}; letter-spacing: -1px;">{{ r.label }}</div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="font-size: 11.5px; color: rgba(255,255,255,0.4); text-align: center; line-height: 1.45;">Faites glisser une colonne, ou touchez une valeur.</div>
+
+      <sc-if value="{{ pickHasErr }}" hint-placeholder-val="{{ false }}">
+        <div style="border-radius: 14px; padding: 12px 14px; background: oklch(0.62 0.19 30 / 0.14); border: 1px solid oklch(0.62 0.19 30 / 0.45); font-size: 12.5px; line-height: 1.45; color: oklch(0.86 0.09 40);">{{ pickErr }}</div>
+      </sc-if>
+
+      <div style="display: flex; gap: 10px;">
+        <div class="tap" onClick="{{ pickCancel }}" style="flex-grow: 1; min-height: 44px; padding: 14px; box-sizing: border-box; border-radius: 15px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.06); font-size: 14.5px; font-weight: 500;">Annuler</div>
+        <div class="tap" onClick="{{ pickConfirm }}" style="flex-grow: 1.4; min-height: 44px; padding: 14px; box-sizing: border-box; border-radius: 15px; display: flex; align-items: center; justify-content: center; background: {{ accent }}; color: oklch(0.19 0.03 230); font-size: 14.5px; font-weight: 700;">Valider</div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
   <!-- ══════════ FEUILLE : RÉSUMÉ POUR LE COACH ══════════ -->
   <sc-if value="{{ summaryOpen }}" hint-placeholder-val="{{ false }}">
   <div style="position: absolute; inset: 0; z-index: 20; display: flex; flex-direction: column; justify-content: flex-end; background: rgba(0,0,0,0.55);">
@@ -853,7 +906,8 @@ const NO_LIGHT = { n: 'No light', g: 'transparent' };
 const SOUNDS = ['FM radio', 'Forest Birds', 'Summer Birds', 'Buddha Wakeup', 'Morning Alps',
                 'Yoga Harmony', 'Nepal Bowls', 'Summer Lake', 'Ocean Waves', 'No sound'];
 const PERIODS = ['Jours', 'Semaine', 'Mois'];
-const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre'];
+const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août',
+                'septembre', 'octobre'];
 const CAL_METRICS = ['Temps au lit', 'Température', 'Humidité', 'Lumière', 'Bruit'];
 // Axe vertical : l'heure de la journée, de midi à midi.
 const HOURS = ['12:00', '10:00', '08:00', '06:00', '04:00', '02:00', '00:00',
@@ -868,24 +922,76 @@ const MONTH = [
   { d: 'sept. 01-06', a: 700, b: 1150 }, { d: '07-13', none: true },
   { d: '14-20', none: true }, { d: '21-27', none: true }, { d: '28-30', none: true },
 ];
-/* Un mois de démonstration : quelques nuits, un trou, deux estimées. */
+/* ── Historique de démonstration ──────────────────────────────────────────
+   Une nuit est rattachée au jour de son heure de coucher (cadrage §3.B) : la
+   clé est donc le jour du COUCHER, et la nuit se lit « du J au J+1 ». Le
+   calendrier et l'écran d'une nuit lisent la même table — sans quoi une case
+   du calendrier ouvrirait une nuit qui n'a pas la durée qu'elle annonce.
+   Août n'est décrit que par ses durées, l'heure de coucher en est dérivée ;
+   septembre est écrit à la main, ce sont les nuits que les écrans montrent.
+   Un jour absent de la table est un jour sans donnée. */
+const DAYS_IN = [31, 28, 31, 30, 31, 30, 31, 31, 30];
+const FIRST_DOW = [4, 0, 0, 3, 5, 1, 3, 6, 2];   // 0 = lundi
+const FIRST_NIGHT = { m: 7, d: 1 };              // début de l'historique
+const LAST_NIGHT = { m: 8, d: 4 };               // dernière nuit relevée
+
+const AUG_LEN = { 1: '7:57', 2: '9:01', 3: '8:35', 4: '9:30', 5: '7:58', 6: '7:43', 7: '8:03',
+                  8: '8:26', 9: '7:44', 17: '7:04', 18: '8:08', 19: '7:08', 20: '10:08',
+                  21: '10:16', 22: '7:44', 24: '7:42', 25: '8:11', 26: '9:44', 27: '7:52',
+                  28: '6:27', 29: '9:27', 30: '7:27', 31: '6:38' };
+const AUG_EST = { 26: true, 31: true };
+/* [coucher, temps au lit, estimé] — le 1er n'a rien, le collecteur était arrêté. */
+const SEP_NIGHTS = { 2: ['23:58', '8:06', true], 3: ['00:12', '6:50'], 4: ['23:41', '7:37'] };
+
+function toMin(t) { const p = t.split(':'); return (+p[0]) * 60 + (+p[1]); }
+function fromMin(v) {
+  const w = ((v % 1440) + 1440) % 1440;
+  return String(Math.floor(w / 60)).padStart(2, '0') + ':' + String(w % 60).padStart(2, '0');
+}
+function durLabel(v) { return Math.floor(v / 60) + ':' + String(v % 60).padStart(2, '0'); }
+/* Coucher de démonstration pour août : autour de 23 h, jamais deux fois le
+   même — c'est cette irrégularité que la vue Semaine donne à voir. */
+function augBed(d) { return 1370 + ((d * 17) % 46); }
+
+function nightAt(m, d) {
+  let bedM = null, lenM = null, est = false;
+  if (m === 7 && AUG_LEN[d]) { bedM = augBed(d); lenM = toMin(AUG_LEN[d]); est = !!AUG_EST[d]; }
+  if (m === 8 && SEP_NIGHTS[d]) {
+    const sp = SEP_NIGHTS[d];
+    bedM = toMin(sp[0]); lenM = toMin(sp[1]); est = !!sp[2];
+  }
+  const dn = (x) => (x === 1 ? '1er' : String(x));
+  const label = d === DAYS_IN[m]
+    ? 'Nuit du ' + dn(d) + ' ' + MONTHS[m] + ' au 1er ' + MONTHS[m + 1]
+    : 'Nuit du ' + dn(d) + ' au ' + dn(d + 1) + ' ' + MONTHS[m];
+  if (bedM === null) return { m, d, label, sub: 'aucun relevé', empty: true, est: false };
+  return {
+    m, d, label, empty: false, est, bedM, riseM: bedM + lenM, lenM,
+    /* Un relevé toutes les sept minutes et demie dans ces données. */
+    sub: fromMin(bedM) + ' – ' + fromMin(bedM + lenM) + ' · '
+       + Math.round(lenM / 7.5) + ' relevés',
+  };
+}
+
+/* Une case de calendrier est une nuit : même table, même durée. Au-delà de la
+   dernière nuit relevée, la case n'a pas de pastille du tout — un jour à venir
+   n'est pas un jour sans donnée. */
 function buildMonth(m) {
-  const days = [31, 28, 31, 30, 31, 30, 31, 31, 30][m];
-  const first = [4, 0, 0, 3, 5, 1, 3, 6, 2][m];   // 0 = lundi
-  const dur = { 1: '7:57', 2: '9:01', 3: '8:35', 4: '9:30', 5: '7:58', 6: '7:43', 7: '8:03',
-                8: '8:26', 9: '7:44', 17: '7:04', 18: '8:08', 19: '7:08', 20: '10:08',
-                21: '10:16', 22: '7:44', 24: '7:42', 25: '8:11', 26: '9:44', 27: '7:52',
-                28: '6:27', 29: '9:27', 30: '7:27', 31: '6:38' };
-  const est = { 26: true, 31: true };
   const out = [];
-  for (let i = 0; i < first; i++) out.push({ num: '', has: false, empty: false });
-  for (let d = 1; d <= days; d++) {
-    const v = m === 7 ? dur[d] : null;
+  for (let i = 0; i < FIRST_DOW[m]; i++) {
+    out.push({ num: '', inMonth: false, has: false, empty: false, future: true });
+  }
+  for (let d = 1; d <= DAYS_IN[m]; d++) {
+    const n = nightAt(m, d);
+    const future = m > LAST_NIGHT.m || (m === LAST_NIGHT.m && d > LAST_NIGHT.d)
+                || m < FIRST_NIGHT.m || (m === FIRST_NIGHT.m && d < FIRST_NIGHT.d);
     out.push({
-      num: String(d), has: !!v, empty: !v, val: v || '',
-      bg: est[d] ? 'transparent' : '#ffffff',
-      fg: est[d] ? 'oklch(0.85 0.10 68)' : 'oklch(0.20 0.03 230)',
-      border: est[d] ? '1.5px dashed oklch(0.78 0.13 68)' : 'none',
+      num: String(d), inMonth: true, day: d, future,
+      has: !n.empty, empty: n.empty && !future,
+      val: n.empty ? '' : durLabel(n.lenM),
+      bg: n.est ? 'transparent' : '#ffffff',
+      fg: n.est ? 'oklch(0.85 0.10 68)' : 'oklch(0.20 0.03 230)',
+      border: n.est ? '1.5px dashed oklch(0.78 0.13 68)' : 'none',
     });
   }
   return out;
@@ -900,7 +1006,9 @@ class Component extends DCLogic {
       screen: 'device', tab: 'cond', metric: 'temp', drag: null,
       period: 0, calMetric: 0, calMonth: 7,
       lightOn: false, lightLevel: 14,
-      tracking: false, night: 0, hoursEdit: false, bedShift: 0, riseShift: 0,
+      tracking: false, nightM: LAST_NIGHT.m, nightD: LAST_NIGHT.d,
+      hoursEdit: false, bedSet: null, riseSet: null,
+      pickOn: false, pickKind: '', pickH: 7, pickM: 0, pickErr: '',
       alarms: [
         { id: 1, h: 6, m: 50, days: 'Jours de la semaine', on: true, pw: true },
         { id: 2, h: 9, m: 0, days: 'Tous les jours', on: false, pw: false },
@@ -938,6 +1046,50 @@ class Component extends DCLogic {
     };
   }
 
+  /* Roue de sélection. Contrairement au curseur, la valeur ne se déduit pas
+     d'une position absolue : elle tourne sans fin, il faut donc un point
+     d'ancrage. Il vit sur l'instance et non dans une fermeture — `renderVals`
+     est rappelé à chaque `setState`, et une fermeture serait remise à zéro au
+     premier millimètre de glissement. */
+  wheelDrag(key, count) {
+    const ROW = 42;
+    return {
+      down: (e) => {
+        try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) { /* souris */ }
+        this.anchor = { y: e.clientY, v: this.state[key] };
+        this.moved = false;
+        this.setState({ drag: key });
+      },
+      move: (e) => {
+        if (this.state.drag !== key || !this.anchor) return;
+        const steps = Math.round((this.anchor.y - e.clientY) / ROW);
+        const v = (((this.anchor.v + steps) % count) + count) % count;
+        if (v !== this.state[key]) { this.moved = true; this.setState({ [key]: v, pickErr: '' }); }
+      },
+      up: () => { this.anchor = null; this.setState({ drag: null }); },
+    };
+  }
+
+  /* Les cinq rangs visibles autour de la valeur retenue. */
+  wheelRows(val, count, key) {
+    return [-2, -1, 0, 1, 2].map((o) => {
+      const v = (((val + o) % count) + count) % count;
+      const a = Math.abs(o);
+      return {
+        label: String(v).padStart(2, '0'),
+        size: a === 0 ? '31px' : (a === 1 ? '21px' : '16px'),
+        opacity: a === 0 ? '1' : (a === 1 ? '0.5' : '0.22'),
+        weight: a === 0 ? '500' : '400',
+        /* Un glissement finit par un clic sur le rang d'où le doigt est parti :
+           sans ce garde-fou, relâcher annulerait le geste. */
+        pick: () => {
+          if (this.moved) { this.moved = false; return; }
+          this.setState({ [key]: v, pickErr: '' });
+        },
+      };
+    });
+  }
+
   hhmm(h, m) {
     return String((h + 24) % 24).padStart(2, '0') + ':' + String((m + 60) % 60).padStart(2, '0');
   }
@@ -959,20 +1111,42 @@ class Component extends DCLogic {
     const dusk = this.slider('dusk', 5, 60, 5);
     const dlv = this.slider('duskLvl', 0, 25, 1);
     const dvo = this.slider('duskVol', 1, 25, 1);
+    const wh = this.wheelDrag('pickH', 24);
+    const wm = this.wheelDrag('pickM', 60);
     const pct = (v, min, max) => Math.round(((v - min) / (max - min)) * 100) + '%';
 
     const al = s.alarms.find((a) => a.id === s.editing) || s.alarms[0] || { h: 7, m: 0, days: 'Tous les jours', pw: false };
     const pwT = this.hhmm(al.h + Math.floor((al.m + s.pwOffset) / 60), (al.m + s.pwOffset) % 60);
 
-    const nights = [
-      { label: 'Nuit du 4 au 5 septembre', sub: '23:41 – 07:18 · 61 relevés', bh: 23, bm: 41, rh: 7, rm: 18, len: '7:37' },
-      { label: 'Nuit du 3 au 4 septembre', sub: '00:12 – 07:02 · 55 relevés', bh: 0, bm: 12, rh: 7, rm: 2, len: '6:50' },
-      { label: 'Nuit du 2 au 3 septembre', sub: '23:58 – 08:04 · 64 relevés', bh: 23, bm: 58, rh: 8, rm: 4, len: '8:06', est: true },
-      { label: 'Nuit du 1er au 2 septembre', sub: 'aucun relevé', empty: true },
-    ];
-    const n = nights[s.night] || nights[0];
-    const bedTime = n.empty ? '—' : this.hhmm(n.bh, n.bm + s.bedShift * 15);
-    const riseTime = n.empty ? '—' : this.hhmm(n.rh, n.rm + s.riseShift * 15);
+    const n = nightAt(s.nightM, s.nightD);
+    /* Une heure corrigée à la main prime sur celle du collecteur. Elle ne
+       décide PAS de la mention « estimé » : d'où vient cette mention n'est pas
+       établi, et se tranchera avec le backend (cadrage §6). */
+    const bedM = s.bedSet !== null ? s.bedSet : (n.empty ? null : n.bedM);
+    const riseM = s.riseSet !== null ? s.riseSet : (n.empty ? null : n.riseM);
+    const estimated = n.est;
+    const bedTime = bedM === null ? '—' : fromMin(bedM);
+    const riseTime = riseM === null ? '—' : fromMin(riseM);
+    const spanM = (bedM === null || riseM === null)
+      ? null : ((((riseM - bedM) % 1440) + 1440) % 1440);
+    const noHours = bedM === null && riseM === null;
+
+    const stepNight = (k) => () => {
+      let m = s.nightM, d = s.nightD + k;
+      if (d < 1) { m -= 1; d = DAYS_IN[m]; }
+      else if (d > DAYS_IN[m]) { m += 1; d = 1; }
+      if (m < FIRST_NIGHT.m || (m === FIRST_NIGHT.m && d < FIRST_NIGHT.d)) return;
+      if (m > LAST_NIGHT.m || (m === LAST_NIGHT.m && d > LAST_NIGHT.d)) return;
+      this.setState({ nightM: m, nightD: d, bedSet: null, riseSet: null, hoursEdit: false });
+    };
+
+    /* Une heure absente ouvre la roue sur une valeur plausible, jamais sur
+       une heure inventée qui serait ensuite validée sans y penser. */
+    const openPick = (kind, cur, fallback) => () => this.setState({
+      pickOn: true, pickKind: kind, pickErr: '',
+      pickH: Math.floor((cur === null ? fallback : cur) / 60),
+      pickM: (cur === null ? fallback : cur) % 60,
+    });
 
     const M = [
       { k: 'temp', name: 'Température', unit: '°C', value: '21,4', verdict: 'Chaud — au-dessus de la plage idéale', color: 'oklch(0.83 0.13 68)', title: 'Température moyenne (°C)', mn: '20,1', mx: '22,6' },
@@ -982,20 +1156,24 @@ class Component extends DCLogic {
     ];
     const dm = M.find((m) => m.k === s.metric) || M[0];
 
-    /* Une nuit sans relevé produit quand même un texte : il dit ce qui manque
-       plutôt que de l'omettre — cadrage §3.F. */
-    const summaryText = n.empty
+    /* Une nuit incomplète produit quand même un texte : il dit ce qui manque
+       plutôt que de l'omettre en silence — cadrage §3.G. */
+    const conditions = n.empty
+      ? '\n\nAucun relevé de conditions pour cette nuit.'
+      : '\n\nConditions de la chambre (min / moyenne / max) :\n' +
+        M.map((m) => '- ' + m.name + ' : ' + m.mn + ' / ' + m.value + ' / ' + m.mx + ' ' + m.unit).join('\n');
+    const mark = estimated ? ' (estimé)' : '';
+    const summaryText = noHours
       ? 'Coach, voici ma nuit à consigner.\n\n' +
         '- ' + n.label + '\n' +
-        '- Aucune heure de coucher ni de lever enregistrée.\n' +
-        '- Aucun relevé de conditions pour cette nuit.'
+        '- Aucune heure de coucher ni de lever enregistrée.' + conditions
       : 'Coach, voici ma nuit à consigner.\n\n' +
         '- ' + n.label + '\n' +
-        '- Couché : ' + bedTime + (n.est ? ' (estimé)' : '') + '\n' +
-        '- Levé : ' + riseTime + (n.est ? ' (estimé)' : '') + '\n' +
-        '- Temps au lit : ' + n.len.replace(':', ' h ') + '\n\n' +
-        'Conditions de la chambre (min / moyenne / max) :\n' +
-        M.map((m) => '- ' + m.name + ' : ' + m.mn + ' / ' + m.value + ' / ' + m.mx + ' ' + m.unit).join('\n');
+        '- Couché : ' + bedTime + (bedM === null ? '' : mark) + '\n' +
+        '- Levé : ' + riseTime + (riseM === null ? '' : mark) + '\n' +
+        '- Temps au lit : ' + (spanM === null
+          ? 'inconnu, une des deux heures manque'
+          : durLabel(spanM).replace(':', ' h ')) + conditions;
 
     return {
       accent,
@@ -1004,7 +1182,7 @@ class Component extends DCLogic {
       isSleep: s.screen === 'sleep', isDetail: s.screen === 'detail',
       isSunPick: s.screen === 'sunPick', isSoundPick: s.screen === 'soundPick',
       isDaysPick: s.screen === 'daysPick', isCalendar: s.screen === 'calendar',
-      showTabs: (s.screen === 'device' || s.screen === 'sleep') && !s.summaryOpen,
+      showTabs: (s.screen === 'device' || s.screen === 'sleep') && !s.summaryOpen && !s.pickOn,
       goDevice: go('device'), goAlarms: go('alarms'), goSunset: go('sunset'), goSleep: go('sleep'),
       goAlarmEdit: go('alarmEdit'), goSunPick: go('sunPick'), goDaysPick: go('daysPick'),
       goCalendar: go('calendar'),
@@ -1035,7 +1213,12 @@ class Component extends DCLogic {
         pwTime: this.hhmm(a.h + Math.floor((a.m + s.pwOffset) / 60), (a.m + s.pwOffset) % 60),
         opacity: a.on ? '1' : '0.42',
         bg: sw(a.on).bg, pos: sw(a.on).pos,
-        toggle: () => this.setState({ alarms: s.alarms.map((x) => x.id === a.id ? Object.assign({}, x, { on: !x.on }) : x) }),
+        /* L'interrupteur est posé sur une ligne qui, elle, ouvre l'alarme :
+           sans arrêter la propagation, l'activer entrerait dans le menu. */
+        toggle: (e) => {
+          if (e && e.stopPropagation) e.stopPropagation();
+          this.setState({ alarms: s.alarms.map((x) => x.id === a.id ? Object.assign({}, x, { on: !x.on }) : x) });
+        },
         open: () => this.setState({ screen: 'alarmEdit', editing: a.id }),
       })),
       addAlarm: () => {
@@ -1070,7 +1253,6 @@ class Component extends DCLogic {
 
       duskDur: s.dusk, duskPct: pct(s.dusk, 5, 60), duskDown: dusk.down, duskMove: dusk.move, duskUp: dusk.up,
       duskLvl: s.duskLvl, dlvPct: pct(s.duskLvl, 0, 25), dlvDown: dlv.down, dlvMove: dlv.move, dlvUp: dlv.up,
-      duskVol: s.duskVol, dvoPct: pct(s.duskVol, 0, 25), dvoDown: dvo.down, dvoMove: dvo.move, dvoUp: dvo.up,
       duskThemes: THEMES.map((t, i) => ({
         name: t.n, grad: t.g, on: i === s.duskTheme,
         pick: () => this.setState({ duskTheme: i }),
@@ -1138,30 +1320,40 @@ class Component extends DCLogic {
       prevMonth: () => this.setState({ calMonth: Math.max(0, s.calMonth - 1) }),
       nextMonth: () => this.setState({ calMonth: Math.min(8, s.calMonth + 1) }),
       calHeads: ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((n) => ({ n })),
-      calDays: buildMonth(s.calMonth),
+      /* Une case ouvre sa nuit, sur l'onglet que le sélecteur de métrique
+         désigne : on est venu chercher une durée ou une condition. */
+      calDays: buildMonth(s.calMonth).map((c) => Object.assign({}, c, {
+        cls: c.inMonth && !c.future ? 'tap' : '',
+        numColor: c.future ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.55)',
+        pick: (c.inMonth && !c.future)
+          ? () => this.setState({
+              screen: 'sleep', tab: s.calMetric === 0 ? 'bed' : 'cond', period: 0,
+              nightM: s.calMonth, nightD: c.day,
+              bedSet: null, riseSet: null, hoursEdit: false,
+            })
+          : () => {},
+      })),
       goBed: () => this.setState({ tab: 'bed' }), goCond: () => this.setState({ tab: 'cond' }),
       tabBedColor: s.tab === 'bed' ? accent : dim, tabCondColor: s.tab === 'cond' ? accent : dim,
       tabBedLine: s.tab === 'bed' ? accent : 'transparent',
       tabCondLine: s.tab === 'cond' ? accent : 'transparent',
 
-      nightLabel: n.label, nightSub: n.sub, inBed: n.len || '— —', bedTime, riseTime,
-      nightEmpty: !!n.empty, nightFilled: !n.empty,
-      confLabel: n.est ? 'estimé' : 'confirmé',
-      confColor: n.est ? 'oklch(0.78 0.13 68)' : 'rgba(255,255,255,0.34)',
+      nightLabel: n.label, nightSub: n.sub, bedTime, riseTime,
+      inBed: spanM === null ? '— —' : durLabel(spanM),
+      nightEmpty: noHours, nightFilled: !noHours,
+      confLabel: estimated ? 'estimé' : 'confirmé',
+      confColor: estimated ? 'oklch(0.78 0.13 68)' : 'rgba(255,255,255,0.34)',
       weekDays: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'].map((name, i) => ({
         name, on: s.days[i],
         toggle: () => this.setState({ days: s.days.map((v, j) => j === i ? !v : v) }),
       })),
-      nextOpacity: s.night === 0 ? '0.28' : '1',
-      prevNight: () => this.setState({ night: Math.min(nights.length - 1, s.night + 1), bedShift: 0, riseShift: 0 }),
-      nextNight: () => this.setState({ night: Math.max(0, s.night - 1), bedShift: 0, riseShift: 0 }),
+      nextOpacity: (s.nightM === LAST_NIGHT.m && s.nightD === LAST_NIGHT.d) ? '0.28' : '1',
+      prevOpacity: (s.nightM === FIRST_NIGHT.m && s.nightD === FIRST_NIGHT.d) ? '0.28' : '1',
+      prevNight: stepNight(-1),
+      nextNight: stepNight(1),
       hoursEdit: s.hoursEdit,
       hoursLabel: s.hoursEdit ? 'Terminer' : 'Corriger les heures',
       toggleHours: () => this.setState({ hoursEdit: !s.hoursEdit }),
-      bedMinus: () => this.setState({ bedShift: s.bedShift - 1 }),
-      bedPlus: () => this.setState({ bedShift: s.bedShift + 1 }),
-      riseMinus: () => this.setState({ riseShift: s.riseShift - 1 }),
-      risePlus: () => this.setState({ riseShift: s.riseShift + 1 }),
 
       measures: M.map((m) => ({
         name: m.name, unit: m.unit, value: m.value, verdict: m.verdict, color: m.color,
@@ -1169,6 +1361,44 @@ class Component extends DCLogic {
         open: () => this.setState({ screen: 'detail', metric: m.k }),
       })),
       dName: dm.name, dTitle: dm.title,
+
+      pickOn: s.pickOn,
+      pickTitle: s.pickKind === 'alarm' ? "Heure de l'alarme"
+        : (s.pickKind === 'bed' ? 'Heure de coucher' : 'Heure de lever'),
+      hourRows: this.wheelRows(s.pickH, 24, 'pickH'),
+      minRows: this.wheelRows(s.pickM, 60, 'pickM'),
+      hDown: wh.down, hMove: wh.move, hUp: wh.up,
+      mDown: wm.down, mMove: wm.move, mUp: wm.up,
+      pickErr: s.pickErr, pickHasErr: !!s.pickErr,
+      openAlarmPick: () => this.setState({
+        pickOn: true, pickKind: 'alarm', pickH: al.h, pickM: al.m, pickErr: '',
+      }),
+      openBedPick: openPick('bed', bedM, 1380),
+      openRisePick: openPick('rise', riseM, 420),
+      pickCancel: () => this.setState({ pickOn: false, pickErr: '' }),
+      pickConfirm: () => {
+        const v = s.pickH * 60 + s.pickM;
+        if (s.pickKind === 'alarm') {
+          this.setState({
+            pickOn: false,
+            alarms: s.alarms.map((x) => x.id === s.editing
+              ? Object.assign({}, x, { h: s.pickH, m: s.pickM }) : x),
+          });
+          return;
+        }
+        /* Une nuit se lit sur l'axe midi → midi : c'est ce qui fait qu'un lever
+           à 07:18 suit bien un coucher à 23:41. Un lever antérieur au coucher
+           est refusé, et l'heure précédente est conservée (cadrage §3.B). */
+        const fromNoon = (t) => ((((t - 720) % 1440) + 1440) % 1440);
+        const b = s.pickKind === 'bed' ? v : bedM;
+        const r = s.pickKind === 'rise' ? v : riseM;
+        if (b !== null && r !== null && fromNoon(r) <= fromNoon(b)) {
+          this.setState({ pickErr: "L'heure de lever précède l'heure de coucher. La correction est refusée, l'heure précédente est conservée." });
+          return;
+        }
+        this.setState(s.pickKind === 'bed'
+          ? { bedSet: v, pickOn: false } : { riseSet: v, pickOn: false });
+      },
 
       summaryOpen: s.summaryOpen, summaryText,
       openSummary: () => this.setState({ summaryOpen: true, copied: false }),
