@@ -216,11 +216,11 @@ raison d'être : le téléphone sert à consulter, le fichier sert à restaurer.
 #### E. Conception (livrable à part entière, pas une finition)
 
 - **Maquettes des écrans** produites et validées avant l'implémentation.
-- **Direction artistique « liquid glass »**, explorée volontairement comme nouveauté par
-  rapport aux projets précédents, mais tenue par une exigence de **crédibilité
-  professionnelle** : l'app est une pièce de candidature auprès de chercheurs. L'effet est au
-  service de la lisibilité, jamais l'inverse — pas de démonstration technique gratuite, pas
-  d'illisibilité assumée au nom du style.
+- **Direction artistique sobre** — le « liquid glass » a été exploré puis **écarté** le
+  2026-09-06 (voir §5). L'exigence qui l'encadrait vaut pour la direction retenue : l'app est
+  une pièce de candidature auprès de chercheurs, l'effet est au service de la lisibilité,
+  jamais l'inverse — pas de démonstration technique gratuite, pas d'illisibilité assumée au
+  nom du style.
 - **Familiarité d'usage avec SleepMapper** : structure à deux onglets, découpage en sections
   titrées, une carte par fonction sur l'écran de pilotage, le détail toujours derrière la
   carte, le chiffre comme élément porteur. Les intentions de `docs/sleepmapper/README.md` sont
@@ -278,13 +278,18 @@ détient tout l'historique.
 
 | Cas | Déclencheur | Comportement attendu |
 | --- | --- | --- |
-| Hors du réseau domestique | L'app est ouverte ailleurs qu'à la maison | La dernière nuit consultée s'affiche depuis le cache, **explicitement datée** (« relevé du … »). Le pilotage est désactivé, pas masqué, avec la raison affichée. |
-| Collecteur injoignable | Le serveur est arrêté, redémarre, ou le réseau est coupé | Message nommant la cause (« collecteur injoignable ») et non un échec générique. Historique en cache si disponible, pilotage désactivé. Nouvelle tentative sans quitter l'écran. |
+| Hors du réseau domestique | L'app est ouverte ailleurs qu'à la maison | **Tout l'historique reste consultable** — il est sur le téléphone (§2.C) — mais la copie est **explicitement datée** (« copie du … ») : elle s'arrête au dernier rattrapage. Le pilotage est désactivé, pas masqué, avec la raison affichée. Ce n'est pas une panne et ne doit pas s'afficher comme telle. |
+| Collecteur injoignable | Le serveur est arrêté, redémarre, ou le réseau est coupé | Message nommant la cause (« collecteur injoignable ») et non un échec générique. **L'historique reste lisible dans la copie locale**, daté du dernier rattrapage ; c'est le rattrapage qui s'arrête, pas la consultation. Pilotage désactivé, nouvelle tentative sans quitter l'écran. |
 | Collecteur joignable, réveil injoignable | Le réveil est débranché, ou son adresse a changé | **L'historique reste consultable en entier** — il est dans le collecteur. Seul le pilotage et le temps réel sont indisponibles, et le message le dit ainsi. |
 | Réveil saturé | L'appareil répond en erreur de délai sous une rafale de requêtes — comportement matériel connu, ~25 ko de tas libre | L'app ne considère pas cela comme une panne : elle réessaie sans bruit et n'alerte qu'après un échec persistant. Elle **n'envoie jamais de rafale** ; les actions sont sérialisées. |
 | Réponse lente | Le relais met plusieurs secondes | Aucun écran figé, aucun écran vide : l'état de chargement est distinct de l'état « pas de données ». |
 | Première utilisation | L'app n'a encore jamais joint le collecteur | État d'accueil expliquant ce qu'il faut (être sur le réseau, collecteur démarré), pas un écran vide ni une erreur brute. |
 | Retour de liaison | Le réseau revient | L'app se remet à jour d'elle-même, sans geste ni redémarrage. |
+
+> **Ce qui distingue vraiment ces trois cas** : ce n'est plus l'historique — depuis la copie
+> locale, il est lisible dans les trois. C'est le **rattrapage** qui tombe dans deux d'entre
+> eux, et le temps réel et le pilotage dans les trois. Un écran d'état qui ne montrerait que la
+> disponibilité de l'historique les rendrait indiscernables.
 
 ### B. Suivi de nuit
 
@@ -293,14 +298,21 @@ détient tout l'historique.
 | Aucune nuit enregistrée | Toute première utilisation, ou historique vide | État vide explicite (« aucune nuit enregistrée pour l'instant »), pas un zéro ni une courbe plate. |
 | Nuit en cours | On consulte après avoir marqué le coucher, avant le lever | La nuit est présentée **comme en cours** — durée qui court, pas d'heure de lever, aucune donnée présentée comme définitive. |
 | Oubli du geste de coucher | On s'est couché sans appuyer | La nuit existe quand même si le réveil a détecté une session, avec l'heure qu'il a retenue ; sinon, la nuit est signalée sans heure de coucher, corrigeable manuellement. **Jamais d'heure inventée.** |
-| Heure déduite plutôt qu'enregistrée | Le geste n'a pas été fait, l'heure vient d'une détection ou d'une correction manuelle | La nuit porte la mention **« estimé »** au lieu de « confirmé ». Emprunté à SleepMapper, qui distingue les deux natures jusque dans ses graphiques — une donnée déduite ne doit jamais se présenter comme une donnée mesurée. C'est la même exigence que le trou de collecte laissé visible dans la courbe. |
+| Heure déduite plutôt qu'enregistrée | Le geste n'a pas été fait, et une heure existe quand même | La nuit porte la mention **« estimé »** au lieu de « confirmé ». Emprunté à SleepMapper, qui distingue les deux natures jusque dans ses graphiques — une donnée déduite ne doit jamais se présenter comme une donnée mesurée. C'est la même exigence que le trou de collecte laissé visible dans la courbe. **Ce qui produit une heure estimée n'est pas établi** : voir §6. En attendant, ne rien afficher comme confirmé qui ne vienne pas du geste, et ne rien marquer estimé sans savoir pourquoi. |
 | Double appui | On appuie deux fois sur « je me couche » | La seconde pression ne crée pas une seconde nuit. L'état affiché est « suivi en cours », avec la possibilité d'annuler. |
 | Appui après-coup | On appuie à 2 h du matin alors qu'on s'est couché à 23 h | L'heure enregistrée est celle de l'appui, et elle est **corrigeable** — c'est le rôle du bouton de modification. |
 | Correction incohérente | On saisit une heure de lever antérieure à l'heure de coucher | Refus avec un message clair, valeur précédente conservée. |
 | Nuit à cheval sur minuit | Cas normal | La nuit est rattachée au **jour de son heure de coucher**. Une nuit ne se scinde jamais en deux. |
 | Sieste ou nuit très courte | Session d'une heure | Enregistrée telle quelle, sans traitement particulier ni exclusion. L'app ne décide pas de ce qui est une « vraie » nuit. |
 | Nuit très longue ou jamais close | Le lever n'a pas été marqué | La nuit reste ouverte et **visiblement anormale**, corrigeable à la main. Aucune clôture automatique silencieuse. |
-| Deux nuits le même jour | Coucher, lever, recoucher | Deux sessions distinctes, toutes deux consultables. |
+| Deux nuits le même jour | Coucher, lever, recoucher | Deux sessions distinctes, toutes deux consultables. **Le réveil, lui, n'en garde qu'une** : `wungt` ne décrit que la session en cours, et un second coucher écrase le premier. C'est donc au collecteur de figer une session dès qu'elle se termine — voir la conséquence pour le backend ci-dessous. |
+
+> **Conséquence pour le backend, à intégrer dès sa conception** : l'API locale n'ayant de
+> mémoire ni longue ni multiple, le collecteur doit **écrire une session terminée dans sa base
+> avant qu'une suivante ne commence**. Sans cela, une sieste suivie d'une nuit ne laisse qu'une
+> trace, et le cas « deux nuits le même jour » ci-dessus est irréalisable — non par choix
+> d'interface, mais parce que la donnée n'existe plus. La cadence de relevé de `wungt` décide
+> donc de ce qui est perdu.
 
 ### C. Conditions de la chambre & courbes
 
@@ -389,8 +401,9 @@ détient tout l'historique.
 
 ## 5. Décisions révisées en cours de cadrage
 
-Deux arbitrages ont changé le jour même de la rédaction, sur apport de matière nouvelle. Ils
-sont consignés comme **renversements**, avec ce qui les a causés — c'est la partie utile.
+Plusieurs arbitrages ont changé après la rédaction — deux le jour même, les autres le
+lendemain — sur apport de matière nouvelle. Ils sont consignés comme **renversements**, avec ce
+qui les a causés : c'est la partie utile.
 
 ### Les verdicts sur les conditions reviennent au périmètre
 
@@ -441,6 +454,21 @@ La règle cardinale n'est pas affaiblie — elle est appliquée correctement : l
 jamais été « est-ce que ça ressemble à des stats ? » mais « est-ce que ça correspond à un
 geste réel ? ».
 
+### La direction artistique « liquid glass » est écartée — 2026-09-06
+
+**Décision initiale** : explorer le « liquid glass », volontairement, comme nouveauté par
+rapport aux projets précédents.
+
+**Ce qui a changé** : l'épreuve demandée par le cadrage lui-même — l'essayer sur un écran réel
+avant de l'appliquer partout. Deux raisons l'ont fait tomber, et la seconde est propre à ce
+projet : **un fond de nuit uni ne donne rien à réfracter**, l'effet n'a donc pas de matière ; et
+**la lumière émise par l'écran pollue le capteur que l'application exploite** — une interface
+lumineuse consultée au lit fausse la mesure de luminosité de la nuit qu'elle affiche.
+
+**Décision retenue** : direction sobre — fond de nuit en dégradé, cartes à peine détachées, une
+seule couleur d'accent, le chiffre comme élément porteur. Les exigences qui encadraient
+l'exploration ne changent pas : lisibilité d'abord, crédibilité professionnelle.
+
 ### Le réveil sera remis à l'heure automatiquement
 
 **Question posée** : l'application peut-elle donner l'heure au réveil ?
@@ -466,13 +494,27 @@ du backend.
 - [ ] **`lgtds`, champ de lumière du profil d'alarme.** Listé par la rétro-ingénierie sans que
       son sens ait été établi. À vérifier sur l'appareil avant de décider s'il a sa place dans
       l'écran d'alarme — il est pour l'instant hors périmètre par défaut d'information.
-- [ ] **Bornes et unités des réglages d'alarme ajoutés.** La durée du rappel est un curseur de
-      1 à 20 minutes chez SleepMapper ; les bornes de la durée du lever, de l'intensité et du
-      volume restent à relever sur l'appareil avant de dessiner les contrôles.
-- [ ] **Qui marque la fin de nuit ?** Le geste de coucher est décidé (bouton dans l'app,
-      écriture dans le réveil), le geste de lever ne l'est pas : arrêt de l'alarme, appui sur
-      la façade, ou correction manuelle a posteriori. À vérifier sur l'appareil avant de figer
-      le comportement de la « nuit en cours ».
+- [x] **Bornes et unités des réglages d'alarme ajoutés.** ~~Restent à relever.~~ **Relevées
+      le 2026-09-06** dans SleepMapper et consignées dans `docs/sleepmapper/README.md` : durée
+      du lever 5–40 min, durée du coucher de soleil 5–60 min, intensité 1–25 au lever et 0–25
+      au coucher, volume 1–25, durée du rappel 1–20 min. **Ne pas les uniformiser** : un lever
+      de soleil ne peut pas être éteint, un coucher de soleil le peut.
+- [ ] **Qui marque la fin de nuit, et d'où vient une heure « estimée » ?** Le geste de coucher
+      est décidé (bouton dans l'app, écriture dans le réveil), le geste de lever ne l'est pas :
+      arrêt de l'alarme, appui sur la façade, ou correction manuelle a posteriori. La même
+      incertitude commande la mention **« estimé »**, reprise de SleepMapper sans que sa règle
+      de production y ait été relevée — et elle ne le sera plus, l'application se videra.
+      Une seule chose est sûre : une heure issue du geste est **confirmée**. Le reste est
+      ouvert, et deux pistes s'excluent mal :
+      - le **réveil déduit** lui-même une mise au lit de ses capteurs — bruit, lumière,
+        mouvement dans la pièce — et remplit `tg2bd` / `tendb` sans que l'app ait rien écrit ;
+      - ou l'inférence vivait dans le **cloud Philips**, et disparaît avec lui.
+
+      À établir **sur l'appareil, au cadrage du backend** : c'est le collecteur qui verra la
+      différence entre une heure qu'il a provoquée et une heure qu'il a trouvée ; l'app ne fait
+      que restituer l'étiquette. **Une correction manuelle ne produit pas « estimé »** — c'était
+      une supposition, elle est retirée. Tant que ce n'est pas tranché, la maquette laisse la
+      mention à ce que le collecteur renvoie et n'en fabrique aucune.
 - [ ] **Contenu exact du résumé pour le coach.** Proposition à valider — date de la nuit,
       heure de coucher, heure de lever, temps au lit, puis pour chaque grandeur le minimum, la
       moyenne et le maximum. Reste à décider si le texte est **modifiable** comme dans
@@ -484,9 +526,8 @@ du backend.
 - [ ] **Profondeur d'historique navigable.** Jusqu'où peut-on remonter, et que se passe-t-il
       quand la base du collecteur devient volumineuse ? Peut rester ouvert jusqu'au cadrage du
       backend, mais doit être tranché là.
-- [ ] **Direction artistique.** Le « liquid glass » doit être éprouvé sur un écran réel — celui
-      des conditions de chambre, le plus dense — avant d'être appliqué partout. Une DA qui ne
-      tient pas sur l'écran le plus chargé ne tient pas.
+- [x] **Direction artistique.** ~~Le « liquid glass » doit être éprouvé sur un écran réel.~~
+      **Tranché le 2026-09-06** : éprouvé, puis écarté. Voir le renversement en §5.
 
 ---
 

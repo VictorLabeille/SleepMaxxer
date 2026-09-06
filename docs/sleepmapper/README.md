@@ -244,7 +244,7 @@ distinguent deux natures de donnée en légende — **« Temps au lit confirmé 
 enregistrées explicitement ne se présente pas comme une nuit déduite. C'est la réponse
 d'interface au cas de l'oubli du geste de coucher, et elle vaut d'être reprise.
 
-### Vues agrégées — hors périmètre de SleepMaxxer
+### Vues agrégées — Semaine et Mois
 
 Le sélecteur de période propose **Jours · Semaine · Mois**. Les deux dernières produisent :
 
@@ -255,9 +255,12 @@ Le sélecteur de période propose **Jours · Semaine · Mois**. Les deux derniè
   horaires se lit d'un coup d'œil ;
 - une icône d'export en haut à droite.
 
-C'est bien conçu, et c'est **exclu du périmètre** : le cadrage ne retient que la navigation
-nuit par nuit. La forme est notée ici au cas où le besoin se manifesterait un jour — pas comme
-une intention.
+Le cadrage les avait d'abord **exclues**, par analogie avec l'onglet Stats de Commit & Push —
+livré, jamais ouvert. Ce relevé a renversé la décision le **2026-09-06** : l'analogie était
+fausse. L'onglet Stats empilait des chiffres *sur* la donnée (records, moyennes, régularité) ;
+ces écrans-ci montrent **la donnée elle-même, autrement**, et ce que l'œil y lit — la régularité
+des horaires — ne se voit dans aucune consultation nuit par nuit. C'est une vue, pas une
+statistique, et c'est un geste déjà accompli. **Elles sont au périmètre** (cadrage §2.B et §5).
 
 ### Un bouton propre au lever de soleil
 
