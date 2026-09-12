@@ -129,7 +129,8 @@ de réapprendre une navigation.
 - **Suivi de l'heure de coucher.** Un bouton « je me couche » qui **écrit dans le réveil**,
   comme le faisait SleepMapper. Le réveil reste le dépositaire de l'heure ; l'application
   est le geste, pas la mémoire. Si le réveil ne répond pas à cet instant, l'appui n'est
-  **jamais perdu** : le collecteur retient l'heure et la pose dès que le réveil répond, et
+  **jamais perdu** : le collecteur retient l'heure de l'appui, qui fait foi, et ouvre la session
+  dans le réveil dès qu'il répond — le réveil n'accepte pas d'heure passée (§5) —, et
   l'application affiche « coucher enregistré, en attente du réveil » — jamais « suivi en
   cours » (voir §5).
 - **Lumière et veilleuse.** Allumage, extinction, réglage d'intensité, bascule de la veilleuse.
@@ -308,7 +309,7 @@ détient tout l'historique.
 | Oubli du geste de coucher | On s'est couché sans appuyer | La nuit existe quand même si le réveil a détecté une session, avec l'heure qu'il a retenue ; sinon, la nuit est signalée sans heure de coucher, corrigeable manuellement. **Jamais d'heure inventée.** |
 | Heure déduite plutôt qu'enregistrée | Le geste n'a pas été fait, et une heure existe quand même | La nuit porte la mention **« estimé »** au lieu de « confirmé ». Emprunté à SleepMapper, qui distingue les deux natures jusque dans ses graphiques — une donnée déduite ne doit jamais se présenter comme une donnée mesurée. C'est la même exigence que le trou de collecte laissé visible dans la courbe. **Ce qui produit une heure estimée n'est pas établi** : voir §6. En attendant, ne rien afficher comme confirmé qui ne vienne pas du geste, et ne rien marquer estimé sans savoir pourquoi. |
 | Double appui | On appuie deux fois sur « je me couche » | La seconde pression ne crée pas une seconde nuit. L'état affiché est « suivi en cours », avec la possibilité d'annuler. |
-| Appui alors que le réveil ne répond pas | Réveil débranché, carte qui redémarre, adresse changée | L'appui n'est **jamais perdu** : le collecteur retient l'heure de l'appui et la pose dans le réveil dès qu'il répond. L'app affiche « coucher enregistré, en attente du réveil », **jamais** « suivi en cours » : ce qui n'est pas encore vrai ne s'affiche pas comme vrai. Voir §5. |
+| Appui alors que le réveil ne répond pas | Réveil débranché, carte qui redémarre, adresse changée | L'appui n'est **jamais perdu** : le collecteur retient l'heure de l'appui, qui fait foi, et ouvre la session dans le réveil dès qu'il répond — `tg2bd` ne s'écrit pas (§5, 2026-09-12). L'app affiche « coucher enregistré, en attente du réveil », **jamais** « suivi en cours » : ce qui n'est pas encore vrai ne s'affiche pas comme vrai. Voir §5. |
 | Appui après-coup | On appuie à 2 h du matin alors qu'on s'est couché à 23 h | L'heure enregistrée est celle de l'appui, et elle est **corrigeable** — c'est le rôle du bouton de modification. |
 | Correction incohérente | On saisit une heure de lever antérieure à l'heure de coucher | Refus avec un message clair, valeur précédente conservée. |
 | Nuit à cheval sur minuit | Cas normal | La nuit est rattachée au **jour de son heure de coucher**. Une nuit ne se scinde jamais en deux. |
@@ -517,8 +518,10 @@ Décidée le 6, elle était restée dans le dépôt du backend : reportée ici l
 **Question posée au cadrage du backend** : que faire quand le geste est fait alors que le
 réveil ne répond pas ?
 
-**Décision retenue** : le collecteur retient l'heure de l'appui et la pose dans le réveil dès
-qu'il répond. Le geste est la seule chose que l'utilisateur produit lui-même ; le perdre parce
+**Décision retenue** : le collecteur retient l'heure de l'appui et ouvre la session dans le
+réveil dès qu'il répond. **Précisé le 2026-09-12 par la mesure** (dépôt Somneo-Scraper, sonde
+P1) : le réveil n'accepte pas d'heure passée — `tg2bd` ne s'écrit pas, il date la session de
+l'instant où il la reçoit. L'heure de l'appui vit donc dans le collecteur, qui fait autorité. Le geste est la seule chose que l'utilisateur produit lui-même ; le perdre parce
 qu'une carte redémarrait serait le pire échec possible, sur la fonction la plus simple.
 
 **Ce que cela impose ici** : un état d'interface de plus, absent des maquettes — « coucher
