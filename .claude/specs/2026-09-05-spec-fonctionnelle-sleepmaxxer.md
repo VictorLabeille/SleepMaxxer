@@ -1,6 +1,7 @@
 # Cadrage — SleepMaxxer, application de remplacement de SleepMapper
 
-> Statut : **validé** · Date : 2026-09-05
+> Statut : **validé** · Date : 2026-09-05 · Contrat avec le collecteur mis à jour le
+> 2026-09-12 (§5)
 
 Premier cadrage du projet. Il porte sur **l'application entière**, pas sur une fonctionnalité :
 c'est lui qui décide de ce qui existe et, surtout, de ce qui n'existera pas. Il précède
@@ -127,14 +128,19 @@ de réapprendre une navigation.
     du formulaire.
 - **Suivi de l'heure de coucher.** Un bouton « je me couche » qui **écrit dans le réveil**,
   comme le faisait SleepMapper. Le réveil reste le dépositaire de l'heure ; l'application
-  est le geste, pas la mémoire.
+  est le geste, pas la mémoire. Si le réveil ne répond pas à cet instant, l'appui n'est
+  **jamais perdu** : le collecteur retient l'heure et la pose dès que le réveil répond, et
+  l'application affiche « coucher enregistré, en attente du réveil » — jamais « suivi en
+  cours » (voir §5).
 - **Lumière et veilleuse.** Allumage, extinction, réglage d'intensité, bascule de la veilleuse.
 - **Coucher de soleil.** Lancement, arrêt, et réglage de la durée et de ses paramètres.
 
 #### B. Onglet « Mon Sommeil » — restitution
 
 - **Temps au lit**, pour une nuit : durée, heure de coucher, heure de lever, avec correction
-  manuelle possible des deux heures.
+  manuelle possible des deux heures. Pour une nuit passée, la correction s'enregistre **dans le
+  collecteur, à côté de la valeur relevée**, jamais à sa place : c'est la seule écriture du
+  téléphone dans la mémoire (voir §5).
 - **Conditions de la chambre** pour cette nuit : température, humidité, lumière et bruit, avec
   leur valeur, leur unité et **le verdict correspondant** (« conditions de sommeil idéales »,
   « trop chaud », « trop humide »…), assorti d'une icône d'état.
@@ -194,13 +200,14 @@ Trois règles sans lesquelles cette fonction dérape :
 2. **La synchronisation est unidirectionnelle et par ajout.** Un relevé de capteur ne se
    modifie pas, il s'accumule. Ce n'est pas de la synchronisation, c'est du rattrapage.
 3. **Hors du réseau domestique, l'application est en lecture seule.** Aucun pilotage, aucune
-   correction d'heure — le réveil est le dépositaire, et il est à la maison.
+   correction d'heure — le réveil et le collecteur sont à la maison.
 
 **Remplacer un collecteur mort : à la main, depuis le Drive** (tranché le 2026-09-06).
-L'application ne repeuple jamais un collecteur neuf. La règle « le téléphone n'écrit jamais
-dans la mémoire » n'a donc **aucune exception**, et le backend n'a besoin d'aucun point
+L'application ne repeuple jamais un collecteur neuf : le backend n'a besoin d'aucun point
 d'entrée d'écriture en masse — ce qui lui épargne le seul endroit où il aurait pu recevoir des
-données non vérifiées. Le rôle de filet de sécurité repose sur l'export Drive, dont c'est la
+données non vérifiées. La règle « le téléphone n'écrit jamais dans la mémoire » garde **une
+seule exception**, décidée au cadrage du backend : la correction d'heure d'une nuit passée,
+tracée et réversible (voir §5). Le rôle de filet de sécurité repose sur l'export Drive, dont c'est la
 raison d'être : le téléphone sert à consulter, le fichier sert à restaurer.
 
 > **Conséquence pour le backend, à intégrer dès sa conception** : l'API du collecteur doit
@@ -241,7 +248,7 @@ manque se soit manifesté à l'usage.
 | **Synchronisation Santé Connect** | Piste explorée puis **abandonnée** : l'API n'a pas de champ pour les données de capteurs, et la priorité de source n'est pas chirurgicale — corriger la seule heure de coucher supposerait de relire la session existante, la recomposer et la réécrire, par-dessus des entrées Fitbit déjà désordonnées. Remplacée par le résumé textuel. |
 | **Compte, appairage, authentification** | Le firmware n'en exige aucun : le schéma de défi/réponse existe dans l'app constructeur mais n'est jamais déclenché, le port d'appairage répond « non implémenté ». Rien à construire. |
 | **Onglets « Conseils » et « Plus »** | Contenu éditorial générique et gestion de compte. C'est le bloat qu'on retire. |
-| **Synchronisation bidirectionnelle** | Le téléphone n'écrit jamais dans la mémoire du collecteur. Voir §2.C. |
+| **Synchronisation bidirectionnelle** | Le téléphone n'écrit jamais dans la mémoire du collecteur, à une exception près : la correction d'heure d'une nuit passée, enregistrée à côté de la valeur relevée. Voir §2.C et §5. |
 | **Pilotage depuis plusieurs téléphones, notifications push, widgets** | Aucun usage identifié. |
 
 ### Hypothèses
@@ -300,6 +307,7 @@ détient tout l'historique.
 | Oubli du geste de coucher | On s'est couché sans appuyer | La nuit existe quand même si le réveil a détecté une session, avec l'heure qu'il a retenue ; sinon, la nuit est signalée sans heure de coucher, corrigeable manuellement. **Jamais d'heure inventée.** |
 | Heure déduite plutôt qu'enregistrée | Le geste n'a pas été fait, et une heure existe quand même | La nuit porte la mention **« estimé »** au lieu de « confirmé ». Emprunté à SleepMapper, qui distingue les deux natures jusque dans ses graphiques — une donnée déduite ne doit jamais se présenter comme une donnée mesurée. C'est la même exigence que le trou de collecte laissé visible dans la courbe. **Ce qui produit une heure estimée n'est pas établi** : voir §6. En attendant, ne rien afficher comme confirmé qui ne vienne pas du geste, et ne rien marquer estimé sans savoir pourquoi. |
 | Double appui | On appuie deux fois sur « je me couche » | La seconde pression ne crée pas une seconde nuit. L'état affiché est « suivi en cours », avec la possibilité d'annuler. |
+| Appui alors que le réveil ne répond pas | Réveil débranché, carte qui redémarre, adresse changée | L'appui n'est **jamais perdu** : le collecteur retient l'heure de l'appui et la pose dans le réveil dès qu'il répond. L'app affiche « coucher enregistré, en attente du réveil », **jamais** « suivi en cours » : ce qui n'est pas encore vrai ne s'affiche pas comme vrai. Voir §5. |
 | Appui après-coup | On appuie à 2 h du matin alors qu'on s'est couché à 23 h | L'heure enregistrée est celle de l'appui, et elle est **corrigeable** — c'est le rôle du bouton de modification. |
 | Correction incohérente | On saisit une heure de lever antérieure à l'heure de coucher | Refus avec un message clair, valeur précédente conservée. |
 | Nuit à cheval sur minuit | Cas normal | La nuit est rattachée au **jour de son heure de coucher**. Une nuit ne se scinde jamais en deux. |
@@ -348,7 +356,7 @@ détient tout l'historique.
 | Rattrapage interrompu | L'app est fermée, le réseau tombe, le téléphone se met en veille | Reprise là où elle s'était arrêtée, jamais depuis le début. Ce qui est déjà copié l'est définitivement. |
 | Nuit déjà connue renvoyée | Le collecteur renvoie une période que le téléphone a déjà | Aucun doublon : la nuit est remplacée par la version du collecteur, qui fait autorité. |
 | Le téléphone en sait plus que le collecteur | Le collecteur a été réinstallé, ou restauré depuis une sauvegarde plus ancienne | **Le téléphone ne perd rien.** Il garde ses nuits, et signale l'écart plutôt que de s'aligner en silence. C'est le cas où le backup sert, et l'aligner sur le collecteur détruirait ce qu'on cherchait à protéger. |
-| Nuit corrigée après coup | L'heure de coucher est corrigée sur le réveil | La correction arrive par le collecteur au rattrapage suivant et remplace la valeur locale. |
+| Nuit corrigée après coup | Une heure est corrigée pour une nuit que le téléphone a déjà copiée | La correction est enregistrée par le collecteur, **à côté** de la valeur relevée, jamais à sa place ; elle revient au rattrapage suivant et remplace la copie locale. La valeur relevée d'origine reste consultable. |
 | Espace disque insuffisant | Le téléphone sature | Le rattrapage s'arrête proprement, l'existant reste lisible, et l'app le dit clairement au lieu d'échouer en silence. |
 | Export volumineux | Plusieurs mois à exporter | La taille est annoncée avant de lancer l'export. Un export d'un an se compte en dizaines de méga-octets — assez pour que la feuille de partage rame sans prévenir. |
 | Export annulé | L'utilisateur ferme la feuille de partage | Aucune action, aucun message d'erreur, et **le compteur de rappel n'est pas remis à zéro** : un export annulé n'est pas un export. |
@@ -483,6 +491,39 @@ silencieuse. L'application n'écrit jamais l'heure ; elle se contente de **signa
 s'il devient visible. Décision touchant le contrat entre les deux projets — **à reporter dans
 les deux notes Obsidian et dans l'`AGENTS.md` de Somneo-Scraper**, où elle devient une exigence
 du backend.
+
+### La correction d'une nuit passée ouvre la seule porte d'écriture — reportée le 2026-09-12
+
+**Décision initiale** : « le téléphone n'écrit jamais dans la mémoire », **sans exception**
+(§2.C, 2026-09-06).
+
+**Ce qui a changé** : le cadrage du backend (2026-09-06, dépôt Somneo-Scraper, §5) a relevé
+la contradiction. Ce document prévoit de corriger les heures de n'importe quelle nuit (§2.B) ;
+or `wungt` ne tient que la session en cours, et corriger une nuit d'avant-hier via le réveil
+est impossible. Les deux règles ne pouvaient pas être vraies ensemble.
+
+**Décision retenue** : le collecteur accepte la correction d'heure, l'enregistre **à côté** de
+la valeur relevée sans jamais l'écraser, et sert les deux. La règle devient « le téléphone
+n'écrit jamais dans la mémoire, **sauf une correction d'heure, tracée et réversible** ». Rien
+d'autre ne change : pas d'écriture en masse, pas de repeuplement d'un collecteur neuf, et la
+synchronisation reste unidirectionnelle pour tout le reste. Une porte étroite et nommée vaut
+mieux qu'une règle absolue qu'on enfreindrait en silence.
+
+Décidée le 6, elle était restée dans le dépôt du backend : reportée ici le 2026-09-12.
+
+### Un appui « je me couche » n'est jamais perdu — reporté le 2026-09-12
+
+**Question posée au cadrage du backend** : que faire quand le geste est fait alors que le
+réveil ne répond pas ?
+
+**Décision retenue** : le collecteur retient l'heure de l'appui et la pose dans le réveil dès
+qu'il répond. Le geste est la seule chose que l'utilisateur produit lui-même ; le perdre parce
+qu'une carte redémarrait serait le pire échec possible, sur la fonction la plus simple.
+
+**Ce que cela impose ici** : un état d'interface de plus, absent des maquettes — « coucher
+enregistré, en attente du réveil », **jamais** « suivi en cours ». La règle « aucun affichage
+optimiste » n'est pas levée : elle est appliquée. **Les maquettes restent à compléter**
+(`design/Main.dc.html`, suivi du coucher).
 
 ---
 

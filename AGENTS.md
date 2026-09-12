@@ -32,10 +32,14 @@ puis **reportée ici et dans la note Obsidian**.
   divergence ; la synchronisation est unidirectionnelle et par ajout ; hors du réseau
   domestique l'app est en lecture seule. Deux vérités appelleraient un moteur de fusion —
   exactement ce qui a fait abandonner Santé Connect.
+- **Une seule écriture du téléphone dans la mémoire du collecteur : la correction d'heure
+  d'une nuit passée**, enregistrée à côté de la valeur relevée, jamais à sa place. Aucune
+  autre, et jamais en masse (cadrage §5).
 - **Ne jamais afficher un seuil ou un verdict dont on ne peut pas citer la source.**
 - **Ne jamais afficher de façon optimiste le résultat d'une écriture.** Un réglage refusé par
   le réveil ne doit jamais apparaître comme appliqué — sur une alarme, l'illusion se paie au
-  réveil.
+  réveil. Même règle pour le coucher : tant que le réveil n'a pas reçu l'appui, l'app affiche
+  « en attente du réveil », jamais « suivi en cours » (cadrage §5).
 - **Ne jamais fondre en un seul message les deux pannes possibles** (collecteur muet / réveil
   injoignable) : dans le second cas l'historique reste entièrement lisible.
 - **Toujours sérialiser les commandes vers le réveil.** Il sature sous une rafale (~25 ko de
