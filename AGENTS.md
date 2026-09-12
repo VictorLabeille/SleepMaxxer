@@ -35,6 +35,11 @@ puis **reportée ici et dans la note Obsidian**.
 - **Une seule écriture du téléphone dans la mémoire du collecteur : la correction d'heure
   d'une nuit passée**, enregistrée à côté de la valeur relevée, jamais à sa place. Aucune
   autre, et jamais en masse (cadrage §5).
+- **Le rattrapage se fait par numéro de séquence, jamais par date** : une nuit corrigée après
+  copie doit revenir. Le collecteur se trouve par mDNS, sous `_somneo-scraper._tcp` ; aucune
+  adresse en dur (cadrage §5, 2026-09-12).
+- **Un trou de collecte se montre avec sa cause**, celle que fournit le collecteur — quatre
+  possibles, dont « carte hors réseau » (cadrage §3.C).
 - **Ne jamais afficher un seuil ou un verdict dont on ne peut pas citer la source.**
 - **Ne jamais afficher de façon optimiste le résultat d'une écriture.** Un réglage refusé par
   le réveil ne doit jamais apparaître comme appliqué — sur une alarme, l'illusion se paie au

@@ -211,8 +211,9 @@ tracée et réversible (voir §5). Le rôle de filet de sécurité repose sur l'
 raison d'être : le téléphone sert à consulter, le fichier sert à restaurer.
 
 > **Conséquence pour le backend, à intégrer dès sa conception** : l'API du collecteur doit
-> exposer un point d'entrée « tout ce qui est arrivé depuis telle date », paginé. Ajouté après
-> coup, il obligerait à retoucher le schéma de la base.
+> exposer un point d'entrée paginé qui rend tout ce qui a été créé **ou modifié** depuis la
+> dernière synchronisation — repéré par un **numéro de séquence**, pas par une date (§5,
+> 2026-09-12). Ajouté après coup, il obligerait à retoucher le schéma de la base.
 
 #### D. Transversal
 
@@ -327,7 +328,7 @@ détient tout l'historique.
 | Cas | Déclencheur | Comportement attendu |
 | --- | --- | --- |
 | Nuit sans mesures | Le collecteur était arrêté cette nuit-là | La nuit s'affiche avec ses heures, et les conditions portent « pas de données ». Les deux ne dépendent pas l'un de l'autre. |
-| Trous dans la collecte | Le collecteur a redémarré, ou le réveil n'a pas répondu un moment | Le trou est **visible dans la courbe**, jamais comblé par interpolation. Une donnée absente ne doit pas ressembler à une donnée mesurée. |
+| Trous dans la collecte | Le collecteur a redémarré, la carte a perdu son WiFi, ou le réveil n'a pas répondu un moment | Le trou est **visible dans la courbe**, jamais comblé par interpolation. Une donnée absente ne doit pas ressembler à une donnée mesurée. Il porte **sa cause**, fournie par le collecteur : collecteur arrêté, carte hors réseau, réveil injoignable ou appareil saturé (§5, 2026-09-12). |
 | Collecte commencée en cours de nuit | Le collecteur a démarré à 2 h | La courbe ne commence qu'à 2 h, et la période couverte est indiquée. Les minimum / moyenne / maximum portent sur ce qui a été mesuré, pas sur la nuit entière. |
 | Un seul point de mesure | Nuit presque vide | La valeur s'affiche, **pas de courbe** — un point unique ne fait pas une tendance. |
 | Capteur muet | Une grandeur manque alors que les autres sont là | Cette mesure seule porte « pas de données » ; les autres s'affichent normalement. Pas d'échec global. |
@@ -525,6 +526,23 @@ enregistré, en attente du réveil », **jamais** « suivi en cours ». La règl
 optimiste » n'est pas levée : elle est appliquée. **Les maquettes restent à compléter**
 (`design/Main.dc.html`, suivi du coucher).
 
+### Trois points du contrat précisés par le plan du collecteur — 2026-09-12
+
+Tranchés par Victor en validant le plan technique du collecteur (dépôt Somneo-Scraper,
+`.claude/specs/2026-09-12-plan-technique-collecteur.md`, §11), et reportés le jour même dans son
+cadrage (§5).
+
+- **Le rattrapage se fait par numéro de séquence, pas par date.** « Depuis telle date » ne
+  ramenait pas une nuit ancienne corrigée après copie, que §3.E exige pourtant de remplacer.
+  Première synchronisation en reculant nuit par nuit, les récentes d'abord ; ensuite, « tout ce
+  qui a été créé ou modifié depuis le numéro n ».
+- **Un trou de collecte porte l'une de quatre causes**, fournie par le collecteur : collecteur
+  arrêté, carte hors réseau, réveil injoignable, appareil saturé. La deuxième est nouvelle : le
+  WiFi de la carte tombe souvent, et la fondre dans « réveil injoignable » accuserait le réveil
+  à tort.
+- **L'app trouve le collecteur par mDNS, sous `_somneo-scraper._tcp`.** C'est la réponse à la
+  question du §6.
+
 ---
 
 ## 6. Questions ouvertes / à trancher
@@ -561,9 +579,9 @@ optimiste » n'est pas levée : elle est appliquée. **Les maquettes restent à 
       moyenne et le maximum. Reste à décider si le texte est **modifiable** comme dans
       Commit & Push, ou figé (le rendre modifiable ajoute un écran de réglages : à ne faire que
       si le besoin apparaît).
-- [ ] **Comment l'app trouve le collecteur.** Découverte automatique sur le réseau, ou adresse
-      saisie une fois ? Question fonctionnelle, car elle décide de ce que voit l'utilisateur à
-      la première ouverture et le jour où l'adresse du collecteur change.
+- [x] **Comment l'app trouve le collecteur.** ~~Découverte automatique, ou adresse saisie une
+      fois ?~~ **Tranché** : découverte automatique par mDNS (cadrage du backend, 2026-09-06),
+      sous le service `_somneo-scraper._tcp` (2026-09-12, §5). Aucune adresse en dur.
 - [ ] **Profondeur d'historique navigable.** Jusqu'où peut-on remonter, et que se passe-t-il
       quand la base du collecteur devient volumineuse ? Peut rester ouvert jusqu'au cadrage du
       backend, mais doit être tranché là.
