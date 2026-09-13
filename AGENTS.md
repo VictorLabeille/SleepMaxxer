@@ -40,6 +40,14 @@ puis **reportée ici et dans la note Obsidian**.
   adresse en dur (cadrage §5, 2026-09-12).
 - **Un trou de collecte se montre avec sa cause**, celle que fournit le collecteur — quatre
   possibles, dont « carte hors réseau » (cadrage §3.C).
+- **Les heures d'une nuit viennent du collecteur (NTP), jamais du réveil** (contrat tranché le
+  2026-09-13, cadrage §F). Le collecteur date une nuit par l'instant où il observe la
+  transition, pas par la date que le réveil inscrit (horloge `wutim`, quelques secondes à part).
+  L'app affiche ces heures telles quelles ; elle ne recompose pas une durée à partir de deux
+  horloges.
+- **L'app ne remet jamais l'heure du réveil, et ne promet pas qu'on le fera** : la remise à
+  l'heure s'est révélée impossible (2026-09-13, cadrage §F). L'app **signale** un écart si le
+  collecteur en rapporte un ; elle ne le corrige pas.
 - **Ne jamais afficher un seuil ou un verdict dont on ne peut pas citer la source.**
 - **Ne jamais afficher de façon optimiste le résultat d'une écriture.** Un réglage refusé par
   le réveil ne doit jamais apparaître comme appliqué — sur une alarme, l'illusion se paie au

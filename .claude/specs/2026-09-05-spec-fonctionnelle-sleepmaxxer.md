@@ -370,9 +370,9 @@ détient tout l'historique.
 
 | Cas | Déclencheur | Comportement attendu |
 | --- | --- | --- |
-| Dérive de l'horloge du réveil | Une fois internet coupé, le réveil n'a plus de source de temps — il ne dispose pas de serveur de temps configurable, son heure venait de la liaison cloud | **Risque le plus concret de la coupure**, mais il est **traitable** : l'heure du réveil est inscriptible. La remise à l'heure est **automatique et périodique, à la charge du collecteur** — voir la décision ci-dessous. L'app ne remet pas l'heure ; elle **signale un écart** s'il devient visible, plutôt que de le laisser corrompre silencieusement les heures de coucher. |
+| Dérive de l'horloge du réveil | Une fois internet coupé, le réveil n'a plus de source de temps — il ne dispose pas de serveur de temps configurable, son heure venait de la liaison cloud | **Risque le plus concret de la coupure. Corrigé le 2026-09-13 par la mesure : il n'est PAS traitable.** L'heure du réveil ne s'écrit pas (`PUT time` refusé, `tmser`/`tmsrc` acceptés mais ignorés), et sa seule source — la session cloud — est chiffrée avec une clé non exposée (`docs/somneo-api.md` §4-5, dépôt Somneo-Scraper). **Décision : le réveil reste connecté au cloud pour l'instant** ; le cloud tient son horloge, le risque ne se matérialise pas. Le collecteur **mesure la dérive, la journalise, la signale** ; l'app affiche l'écart, ne remet jamais l'heure. L'isolement (couper le téléversement) est reporté : il ne casse que l'horloge. |
 | Changement d'heure été / hiver | Passage saisonnier | Une nuit qui chevauche le changement conserve une durée juste ; aucune nuit fantôme ni dupliquée. |
-| Horloges désaccordées | Le téléphone et le réveil divergent | Les heures d'une nuit proviennent d'**une seule source** — celle du réveil, via le collecteur — pour ne pas mélanger deux référentiels dans une même durée. |
+| Horloges désaccordées | Le téléphone et le réveil divergent | Les heures d'une nuit proviennent d'**une seule source** — **corrigé le 2026-09-13 : celle du collecteur (NTP)**, non celle du réveil. Le collecteur date une nuit par l'instant où il observe la transition `wungt` (heure réseau), et non par la date `tg2bd` inscrite par le réveil (horloge `wutim`, 2–5 s derrière, écart variable). Les valeurs du réveil sont conservées pour la traçabilité, jamais servies comme l'heure. Un seul référentiel dans une durée. |
 
 ### G. Résumé pour le coach
 
@@ -480,6 +480,17 @@ seule couleur d'accent, le chiffre comme élément porteur. Les exigences qui en
 l'exploration ne changent pas : lisibilité d'abord, crédibilité professionnelle.
 
 ### Le réveil sera remis à l'heure automatiquement
+
+> **Renversé le 2026-09-13 par la mesure.** Ce qui suit reposait sur « l'heure du réveil est
+> inscriptible » — c'est faux. Trois voies épuisées : `PUT products/0/time` refusé (500/500),
+> `wutms.tmser`/`tmsrc` acceptés mais jamais appliqués, et la session cloud qui pose l'heure est
+> chiffrée (AES/CB-Encrypted) avec une clé que le port `security` ne fournit pas (dérivée au
+> provisioning). Forger l'heure demanderait de rétro-concevoir la crypto CPP : écarté.
+> **Décision effective : le réveil reste connecté au cloud** (qui tient son horloge) ; le
+> collecteur **mesure, journalise et signale** la dérive sans jamais l'écrire, et sert à l'app
+> l'heure corrigée. L'isolement — l'objet du projet — est un interrupteur reporté : il ne casse
+> que l'horloge, tout le reste étant local. Détail : `docs/somneo-api.md` §4-5 (Somneo-Scraper).
+> Le titre de cette section est conservé pour la mémoire du processus ; le fond est caduc.
 
 **Question posée** : l'application peut-elle donner l'heure au réveil ?
 
