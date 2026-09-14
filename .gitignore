@@ -8,3 +8,24 @@ docs/sleepmapper/*.jpeg
 # les .dc.html et canvas.json par le helper du skill design.
 design/*.html
 !design/*.dc.html
+
+# Expo / Node
+node_modules/
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.pem
+.metro-health-check*
+npm-debug.*
+.env*.local
+*.tsbuildinfo
+# dossiers natifs générés par `expo prebuild` / EAS
+/ios
+/android
