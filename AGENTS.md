@@ -16,9 +16,13 @@
 | À quoi ressemblait l'interface remplacée | `docs/sleepmapper/README.md` |
 | À quoi ressemble l'application, écran par écran | `design/Main.dc.html`, `design/EtatsDegrades.dc.html` |
 | Protocole du réveil, champs, pièges matériels | `docs/somneo-api.md` **du dépôt Somneo-Scraper** |
+| Comment le code est bâti, et les choix faits **par défaut**, sans arbitrage | `.claude/specs/2026-09-14-plan-technique-app.md` |
+| Ce que le collecteur ne tient pas du contrat, et ce que l'app contourne | `.claude/specs/2026-09-14-ecarts-contrat-sleepmaxxer.md` **du dépôt Somneo-Scraper** |
+| Lancer, tester, construire l'APK | `README.md`, « Développer » |
 
-Le code applicatif n'est pas commencé. Sa structure sera arrêtée par la session qui l'écrira,
-puis **reportée ici et dans la note Obsidian**.
+Code : `src/app` (écrans, expo-router) · `src/domain` (règles pures, testées) · `src/data`
+(API, copie SQLite, rattrapage, mDNS, sauvegarde) · `src/state` (état, commandes) · `src/ui`.
+Une règle métier va dans `src/domain`, jamais dans un écran.
 
 ## Règles impératives
 
@@ -76,6 +80,23 @@ puis **reportée ici et dans la note Obsidian**.
 - **Le prototype tient dans un seul artboard.** Les dix écrans de `Main.dc.html` partagent un
   état ; deux artboards ne partagent rien. Ne pas « ranger » un écran dans un fichier à part :
   la navigation cesserait de fonctionner.
+
+## Pièges d'outillage
+
+- **Expo SDK 56** : lire la documentation versionnée (`docs.expo.dev/versions/v56.0.0`), pas celle
+  de la dernière version.
+- **`android/` est généré** par `expo prebuild` (et par EAS), non versionné. Toute configuration
+  native passe par `app.json` et ses plugins, jamais par une retouche de `android/`.
+- **TypeScript 6 ne charge plus les `@types/*` d'office** : `tsconfig.json` les déclare (`jest`,
+  `node`). Un nouveau paquet de types s'y ajoute.
+- **Le preset `jest-expo` remplace `fetch` par un simulacre** : un test qui veut le vrai réseau
+  (le contrat vérifié contre le collecteur) passe par `node:http`.
+- **Les tests dépendent du fuseau** : `npm test` fixe `TZ=Europe/Paris`. `jest` lancé à nu fait
+  échouer les tests d'heures.
+- **Pas de mDNS dans l'émulateur ni dans le navigateur** (NAT) : `EXPO_PUBLIC_COLLECTOR_URL`, en
+  développement seulement — jamais dans un fichier versionné, jamais dans une version livrée.
+- **`src/data/testing/` est hors de `__tests__/`** exprès : jest prend tout fichier de
+  `__tests__/` pour une suite, y compris le faux collecteur.
 
 ## Dépôt public
 
