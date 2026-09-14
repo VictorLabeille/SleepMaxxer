@@ -97,6 +97,10 @@ Une règle métier va dans `src/domain`, jamais dans un écran.
   développement seulement — jamais dans un fichier versionné, jamais dans une version livrée.
 - **`src/data/testing/` est hors de `__tests__/`** exprès : jest prend tout fichier de
   `__tests__/` pour une suite, y compris le faux collecteur.
+- **Un build Gradle interrompu laisse des JSON vides dans les `.cxx`** (`node_modules/*/android/.cxx`,
+  `android/app/.cxx`) : le suivant échoue en `EOFException … line 1 column 1`. Les supprimer.
+- **Ne jamais essayer une écriture le soir** : le réveil est dans une chambre, et un « je me
+  couche » d'essai crée une vraie nuit dans le collecteur.
 
 ## Dépôt public
 

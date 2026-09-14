@@ -103,7 +103,7 @@ export default function CalendarScreen() {
                   <T size={11} weight="semibold" color={estimated ? '#fac285' : ongoing ? colors.accent : colors.onAccent}>{valueOf(n)}</T>
                   {dayNights.length > 1 ? <View style={{ position: 'absolute', right: -2, top: -2, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}><T size={9.5} weight="bold" color={colors.onAccent}>{`+${dayNights.length - 1}`}</T></View> : null}
                 </View>
-              ) : inHistory ? (
+              ) : inHistory && day < today ? (
                 <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.045)' }} />
               ) : null}
             </Pressable>

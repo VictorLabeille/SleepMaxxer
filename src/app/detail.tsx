@@ -97,7 +97,7 @@ export default function DetailScreen() {
             })}
           </Card>
           <T size={12.5} color={colors.textSoft} style={{ paddingHorizontal: 20, paddingTop: 14 }}>{`« ${info.explanation} »`}</T>
-          <T size={11} color={colors.textFaint} style={{ paddingHorizontal: 20, paddingTop: 8 }}>{`Texte et seuils de SleepMapper (Philips). ${THRESHOLDS_SOURCE}`}</T>
+          <T size={11} color={colors.textFaint} style={{ paddingHorizontal: 20, paddingTop: 8 }}>{`Texte cité de SleepMapper. ${THRESHOLDS_SOURCE}`}</T>
         </>
       )}
     </Screen>

@@ -109,7 +109,15 @@ src/ui/       thème, pièces communes, feuilles et roue d'heure, graphiques, vu
   reprise après interruption, nuit corrigée après copie, collecteur réinstallé, type d'agrégat.
 - **Contrat vérifié contre le vrai collecteur**, en lecture seule :
   `COLLECTOR_URL=http://<carte>:8760 npm test -- collector.live`.
-- **Essai sur émulateur** : voir le README (« Développer »).
+- **Essai sur émulateur, le 2026-09-14 au soir** (build de débogage, adresse du collecteur donnée
+  à Metro) : l'app s'ouvre, trouve le collecteur, rattrape la copie (1 nuit, 1 479 relevés) et
+  affiche sans erreur tous les écrans — accueil, nuit et conditions, détail d'une mesure,
+  calendrier, semaine, alarmes, coucher de soleil, copie locale, résumé pour le coach. Les valeurs
+  recoupent le résumé que le collecteur calcule de son côté.
+- **Aucune écriture essayée**, exprès : c'était le soir, le réveil est dans une chambre, et un
+  « je me couche » d'essai aurait créé une vraie nuit. Le collecteur refusait de toute façon toute
+  commande (écart 10 de sa spec). Gestes, lumière, alarmes, correction d'heure : à essayer en
+  journée, l'écart 10 réglé.
 - **Reste à vérifier sur le téléphone** : la découverte mDNS (impossible dans l'émulateur) et le
   geste du coucher, d'une main, dans le noir.
 

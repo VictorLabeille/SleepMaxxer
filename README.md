@@ -102,7 +102,8 @@ SDK Android (`JAVA_HOME`, `ANDROID_HOME`) :
 
 ```bash
 npx expo prebuild --platform android
-cd android && ./gradlew assembleRelease   # → android/app/build/outputs/apk/release/
+cd android && ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a
+# → android/app/build/outputs/apk/release/app-release.apk, pour un téléphone arm64
 ```
 
 `android/` est généré et non versionné : toute configuration native passe par `app.json`. L'APK
