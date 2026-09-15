@@ -51,6 +51,18 @@ Une règle métier va dans `src/domain`, jamais dans un écran.
   `since_seq`, `kind` est le genre de l'élément. **`hist` est une chaîne JSON**, rangée telle
   quelle. Un agrégat n'est servi qu'à son changement (2026-09-15, écarts 4 et 11 de
   `.claude/specs/2026-09-14-ecarts-contrat-sleepmaxxer.md` du dépôt Somneo-Scraper).
+- **Le rattrapage se fait en trois passes, c'est le mode d'emploi officiel** (2026-09-15, écart
+  6) : `before` pour les nuits récentes ; `since_seq` au fil de l'eau ; `since_seq=0` jusqu'à la
+  séquence de référence, en fond. `before` ne porte que les nuits closes et leurs points : sans
+  la troisième passe, la copie n'est pas complète.
+- **Le catalogue du collecteur ne sert que ce que l'appareil publie.** « Aucun son », la radio
+  FM, « No light » et les couleurs viennent de l'app, avec leur source
+  (`docs/sleepmapper/README.md`) — 2026-09-15, écart 9.
+- **L'export lit l'instantané des réglages** : `GET /v1/settings/snapshot` sert le dernier corps
+  de chacun des seize profils (`profiles`, par numéro, avec `since`), `complete`, et les ports
+  de réglage (`ports`). Il est en lecture seule, les profils étant relus en journée par le
+  collecteur (2026-09-15, écart 7). `GET /v1/outages` et `GET /v1/aggregates` existent, par
+  période (écart 8).
 - **Un trou de collecte se montre avec sa cause**, celle que fournit le collecteur — quatre
   possibles, dont « carte hors réseau » (cadrage §3.C). « Collecteur arrêté » n'est écrit que
   depuis le 2026-09-15 : un trou plus ancien sans cause reste « cause non fournie ». Le statut
