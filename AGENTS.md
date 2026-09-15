@@ -47,6 +47,10 @@ Une règle métier va dans `src/domain`, jamais dans un écran.
 - **Le rattrapage se fait par numéro de séquence, jamais par date** : une nuit corrigée après
   copie doit revenir. Le collecteur se trouve par mDNS, sous `_somneo-scraper._tcp` ; aucune
   adresse en dur (cadrage §5, 2026-09-12).
+- **Un agrégat porte son type sous `aggregate_kind`**, dans les deux modes du rattrapage : en
+  `since_seq`, `kind` est le genre de l'élément. **`hist` est une chaîne JSON**, rangée telle
+  quelle. Un agrégat n'est servi qu'à son changement (2026-09-15, écarts 4 et 11 de
+  `.claude/specs/2026-09-14-ecarts-contrat-sleepmaxxer.md` du dépôt Somneo-Scraper).
 - **Un trou de collecte se montre avec sa cause**, celle que fournit le collecteur — quatre
   possibles, dont « carte hors réseau » (cadrage §3.C).
 - **Les heures d'une nuit viennent du collecteur (NTP), jamais du réveil** (contrat tranché le
