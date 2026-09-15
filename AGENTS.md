@@ -18,6 +18,7 @@
 | Protocole du réveil, champs, pièges matériels | `docs/somneo-api.md` **du dépôt Somneo-Scraper** |
 | Comment le code est bâti, et les choix faits **par défaut**, sans arbitrage | `.claude/specs/2026-09-14-plan-technique-app.md` |
 | Ce que le collecteur ne tient pas du contrat, et ce que l'app contourne | `.claude/specs/2026-09-14-ecarts-contrat-sleepmaxxer.md` **du dépôt Somneo-Scraper** |
+| Ce que l'app doit changer depuis les corrections du collecteur (2026-09-15), et ce qui reste à trancher | `.claude/specs/2026-09-15-adaptations-collecteur.md` |
 | Lancer, tester, construire l'APK | `README.md`, « Développer » |
 
 Code : `src/app` (écrans, expo-router) · `src/domain` (règles pures, testées) · `src/data`
