@@ -52,7 +52,11 @@ Une règle métier va dans `src/domain`, jamais dans un écran.
   quelle. Un agrégat n'est servi qu'à son changement (2026-09-15, écarts 4 et 11 de
   `.claude/specs/2026-09-14-ecarts-contrat-sleepmaxxer.md` du dépôt Somneo-Scraper).
 - **Un trou de collecte se montre avec sa cause**, celle que fournit le collecteur — quatre
-  possibles, dont « carte hors réseau » (cadrage §3.C).
+  possibles, dont « carte hors réseau » (cadrage §3.C). « Collecteur arrêté » n'est écrit que
+  depuis le 2026-09-15 : un trou plus ancien sans cause reste « cause non fournie ». Le statut
+  dit si l'heure de la carte est synchronisée (`collecteur.heure_synchronisee`) ; l'app le
+  signale, sans rien corriger (écart 5 de `.claude/specs/2026-09-14-ecarts-contrat-sleepmaxxer.md`
+  du dépôt Somneo-Scraper).
 - **Les heures d'une nuit viennent du collecteur (NTP), jamais du réveil** (contrat tranché le
   2026-09-13, cadrage §F). Le collecteur date une nuit par l'instant où il observe la
   transition, pas par la date que le réveil inscrit (horloge `wutim`, quelques secondes à part).
