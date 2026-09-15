@@ -101,9 +101,11 @@ Une règle métier va dans `src/domain`, jamais dans un écran.
   `android/app/.cxx`) : le suivant échoue en `EOFException … line 1 column 1`. Les supprimer.
 - **Ne jamais essayer une écriture le soir** : le réveil est dans une chambre, et un « je me
   couche » d'essai crée une vraie nuit dans le collecteur.
-- **L'APK construite en local est signée par `~/.android/debug.keystore` de la machine.** Une
-  mise à jour signée par une autre clé (autre poste, EAS) ne s'installe qu'après désinstallation,
-  ce qui **efface la copie locale** : exporter une sauvegarde avant, ou garder la même clé.
+- **L'APK construite en local est signée par la clé de débogage publique du modèle React Native**
+  (`android/app/debug.keystore`, recopiée à l'identique par chaque `prebuild`) : d'un poste à
+  l'autre, elle se met à jour par-dessus. **Une APK d'EAS est signée par une autre clé** : elle ne
+  s'installe qu'après désinstallation, ce qui **efface la copie locale**. Exporter une sauvegarde
+  avant de changer de chaîne de construction.
 
 ## Dépôt public
 
