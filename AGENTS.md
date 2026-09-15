@@ -38,7 +38,12 @@ Une règle métier va dans `src/domain`, jamais dans un écran.
   exactement ce qui a fait abandonner Santé Connect.
 - **Une seule écriture du téléphone dans la mémoire du collecteur : la correction d'heure
   d'une nuit passée**, enregistrée à côté de la valeur relevée, jamais à sa place. Aucune
-  autre, et jamais en masse (cadrage §5).
+  autre, et jamais en masse (cadrage §5). Depuis le 2026-09-15, le collecteur sert chaque nuit,
+  rattrapage compris, avec l'heure qui fait foi, son origine (`corrected` si corrigée), le relevé
+  à côté (`*_observed`, `*_observed_origin`) et le journal `corrections`. Une correction
+  `value: null` revient au relevé. **Lire l'origine servie**, pas une mémoire locale des
+  corrections : elle seule voit un retour. Détail : écarts 1-3 de
+  `.claude/specs/2026-09-14-ecarts-contrat-sleepmaxxer.md` du dépôt Somneo-Scraper.
 - **Le rattrapage se fait par numéro de séquence, jamais par date** : une nuit corrigée après
   copie doit revenir. Le collecteur se trouve par mDNS, sous `_somneo-scraper._tcp` ; aucune
   adresse en dur (cadrage §5, 2026-09-12).
