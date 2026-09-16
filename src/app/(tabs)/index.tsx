@@ -208,7 +208,7 @@ function LightCard({ link }: { link: LinkView }) {
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
         <Icon name="sun" size={19} color={light?.onoff ? colors.accent : 'rgba(255,255,255,0.72)'} strokeWidth={1.5} />
         <T size={15.5} weight="semibold" style={{ flex: 1 }}>Lumière</T>
-        <Toggle label="Lumière" value={!!light?.onoff} pending={busy === 'onoff'} disabled={!controllable || (busy !== null && busy !== 'onoff')} onPress={() => light && run('onoff', (api) => api.light(!light.onoff))} />
+        <Toggle label="Lumière" value={!!light?.onoff} pending={busy === 'onoff'} disabled={!controllable} onPress={() => light && run('onoff', (api) => api.light(!light.onoff))} />
       </View>
       {light?.onoff ? (
         <View style={{ marginTop: 12 }}>
@@ -232,7 +232,7 @@ function LightCard({ link }: { link: LinkView }) {
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11, marginTop: 16, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.hairline }}>
         <Icon name="moon" size={17} color={light?.ngtlt ? colors.accent : 'rgba(255,255,255,0.6)'} strokeWidth={1.5} />
         <T size={14.5} weight="medium" style={{ flex: 1 }}>Veilleuse</T>
-        <Toggle label="Veilleuse" value={!!light?.ngtlt} pending={busy === 'night'} disabled={!controllable || (busy !== null && busy !== 'night')} onPress={() => light && run('night', (api) => api.nightlight(!light.ngtlt))} />
+        <Toggle label="Veilleuse" value={!!light?.ngtlt} pending={busy === 'night'} disabled={!controllable} onPress={() => light && run('night', (api) => api.nightlight(!light.ngtlt))} />
       </View>
       {!link.canControl ? <T size={12} color={colors.textMuted} style={{ marginTop: 12 }}>{link.controlReason}</T> : null}
       {link.canControl && !light ? <T size={12} color={colors.textMuted} style={{ marginTop: 12 }}>État de la lampe pas encore relu.</T> : null}
