@@ -11,6 +11,9 @@ import type { Aggregate, AggregateKind, Night, Outage, Reading, SyncItem } from 
 
 export class FakeCollector {
   seq = 0;
+  /** Sert l'ancien contrat : pas d'`aggregate_kind`, pas de relevé à côté d'une correction. Au
+   *  moins un test doit garder cette forme — une copie faite avant le 2026-09-15 en est pleine. */
+  legacy = false;
   readings: Reading[] = [];
   aggregates: Aggregate[] = [];
   nights: Night[] = [];
@@ -45,11 +48,35 @@ export class FakeCollector {
     this.outages.push({ id, seq: this.next(), start, end, cause, failures: 1 });
   }
 
-  /** Comme le collecteur : la valeur servie change, et la nuit reprend une séquence. */
-  correct(id: number, field: 'bedtime' | 'risetime', value: number): void {
+  /**
+   * Comme le collecteur depuis le 2026-09-15 : la valeur servie change, l'origine devient
+   * `corrected`, le relevé est gardé à côté et le retour entre au journal. La nuit reprend une
+   * séquence, ce qui la fait revenir au rattrapage.
+   */
+  correct(id: number, field: 'bedtime' | 'risetime', value: number | null): void {
     const n = this.nights.find((x) => x.id === id);
     if (!n) throw new Error('nuit inconnue');
-    n[field] = value;
+    if (!this.legacy && n.bedtime_observed === undefined) {
+      n.bedtime_observed = n.bedtime;
+      n.risetime_observed = n.risetime;
+      n.bedtime_observed_origin = n.bedtime_origin;
+      n.risetime_observed_origin = n.risetime_origin;
+    }
+    const observed = field === 'bedtime' ? n.bedtime_observed : n.risetime_observed;
+    const observedOrigin = field === 'bedtime' ? n.bedtime_observed_origin : n.risetime_observed_origin;
+    if (field === 'bedtime') {
+      n.bedtime = value ?? observed ?? null;
+      n.bedtime_origin = value === null ? observedOrigin ?? null : 'corrected';
+    } else {
+      n.risetime = value ?? observed ?? null;
+      n.risetime_origin = value === null ? observedOrigin ?? null : 'corrected';
+    }
+    if (!this.legacy) {
+      n.corrections = [
+        ...(n.corrections ?? []),
+        { id: (n.corrections?.length ?? 0) + 1, seq: this.seq + 1, night_id: id, ts: 0, field, value },
+      ];
+    }
     n.seq = this.next();
   }
 
@@ -98,8 +125,14 @@ export class FakeCollector {
             .filter((r) => r.seq > since)
             .sort((a, b) => a.seq - b.seq)
             .slice(0, limit)
-            // Le vrai collecteur écrase la colonne `kind` des agrégats (écart 4).
-            .forEach((r) => items.push({ ...r, kind } as unknown as SyncItem));
+            // `kind` porte le genre de l'élément ; pour un agrégat, son type vient à côté, sous
+            // `aggregate_kind` (contrat du 2026-09-15). En mode `legacy`, il manque.
+            .forEach((r) => {
+              const typed = kind === 'aggregate' && !self.legacy
+                ? { aggregate_kind: (r as unknown as Aggregate).kind }
+                : {};
+              items.push({ ...r, kind, ...typed } as unknown as SyncItem);
+            });
         }
         items.sort((a, b) => a.seq - b.seq);
         const page = items.slice(0, limit);
@@ -108,6 +141,7 @@ export class FakeCollector {
       status: unused, device: unused, catalog: unused, night: unused, bedtime: unused, risetime: unused,
       correctNight: unused, light: unused, nightlight: unused, sunset: unused, sunsetSettings: unused,
       snooze: unused, alarm: unused, createAlarm: unused, updateAlarm: unused, deleteAlarm: unused,
+      settingsSnapshot: unused, aggregatesFrom: unused,
     };
   }
 }

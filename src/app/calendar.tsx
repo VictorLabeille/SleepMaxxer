@@ -9,7 +9,7 @@ import { Pressable, View } from 'react-native';
 import { nightAverages } from '../data/db';
 import type { StoredNight } from '../domain/backup';
 import { durationShort, formatMeasure, isoDay, monthYear, parseDay } from '../domain/format';
-import { inBedSeconds, isInProgress, parseCorrected } from '../domain/nights';
+import { inBedSeconds, isInProgress, timeOrigin } from '../domain/nights';
 import { METRIC_ORDER, METRICS, type Metric } from '../domain/thresholds';
 import { useAsync, useNights, useNow } from '../state/hooks';
 import { useApp } from '../state/store';
@@ -88,7 +88,7 @@ export default function CalendarScreen() {
           const dayNights = byDay.get(day) ?? [];
           const n = dayNights[0];
           const inHistory = day >= firstDay && day <= today;
-          const estimated = n ? n.risetime_origin === 'estimated' && !parseCorrected(n.corrected).has('risetime') : false;
+          const estimated = n ? timeOrigin(n, 'risetime') === 'estimé' : false;
           const ongoing = n ? isInProgress(n) : false;
           return (
             <Pressable

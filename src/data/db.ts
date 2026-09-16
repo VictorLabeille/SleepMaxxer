@@ -8,7 +8,7 @@ import type { StoredNight } from '../domain/backup';
 import type { ReadingPoint } from '../domain/stats';
 import type { Metric } from '../domain/thresholds';
 import type { SyncCursor, SyncPage, SyncStore } from './sync';
-import type { Aggregate, Night, Outage, Reading } from './types';
+import type { Aggregate, Night, NightCorrection, Outage, Reading } from './types';
 
 const SCHEMA = `
 PRAGMA journal_mode = WAL;
@@ -27,9 +27,15 @@ CREATE TABLE IF NOT EXISTS night (
   id INTEGER PRIMARY KEY, seq INTEGER NOT NULL, day TEXT NOT NULL,
   bedtime REAL, risetime REAL, state TEXT NOT NULL,
   bedtime_origin TEXT, risetime_origin TEXT, raw_tg2bd TEXT, raw_tendb TEXT,
-  corrected TEXT
+  bedtime_observed REAL, risetime_observed REAL,
+  bedtime_observed_origin TEXT, risetime_observed_origin TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_night_bedtime ON night (bedtime);
+CREATE TABLE IF NOT EXISTS correction (
+  id INTEGER PRIMARY KEY, seq INTEGER NOT NULL, night_id INTEGER NOT NULL,
+  ts REAL NOT NULL, field TEXT NOT NULL, value REAL
+);
+CREATE INDEX IF NOT EXISTS idx_correction_night ON correction (night_id);
 CREATE TABLE IF NOT EXISTS outage (
   id INTEGER PRIMARY KEY, seq INTEGER NOT NULL, start REAL NOT NULL, "end" REAL,
   cause TEXT NOT NULL, failures INTEGER
@@ -39,11 +45,33 @@ CREATE INDEX IF NOT EXISTS idx_outage_start ON outage (start);
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
+/**
+ * Colonnes ajoutées après coup : `CREATE TABLE IF NOT EXISTS` ne touche pas une table qui existe
+ * déjà. L'ancienne colonne `corrected` reste en place sur les bases d'avant le 2026-09-16 — plus
+ * rien ne la lit, et SQLite ne sait pas la retirer sans recopier la table entière.
+ */
+const NIGHT_ADDED_COLUMNS = [
+  'bedtime_observed REAL',
+  'risetime_observed REAL',
+  'bedtime_observed_origin TEXT',
+  'risetime_observed_origin TEXT',
+] as const;
+
+async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
+  const columns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(night)');
+  const present = new Set(columns.map((c) => c.name));
+  for (const declaration of NIGHT_ADDED_COLUMNS) {
+    const name = declaration.split(' ')[0];
+    if (!present.has(name)) await db.execAsync(`ALTER TABLE night ADD COLUMN ${declaration}`);
+  }
+}
+
 export function getDb(): Promise<SQLite.SQLiteDatabase> {
   if (!dbPromise) {
     dbPromise = (async () => {
       const db = await SQLite.openDatabaseAsync('sleepmaxxer.db');
       await db.execAsync(SCHEMA);
+      await migrate(db);
       return db;
     })();
   }
@@ -110,7 +138,9 @@ const READING_COLUMNS = ['seq', 'ts', 'mslux', 'mstmp', 'msrhu', 'mssnd', 'avlux
 const NIGHT_COLUMNS = [
   'id', 'seq', 'day', 'bedtime', 'risetime', 'state',
   'bedtime_origin', 'risetime_origin', 'raw_tg2bd', 'raw_tendb',
+  'bedtime_observed', 'risetime_observed', 'bedtime_observed_origin', 'risetime_observed_origin',
 ] as const;
+const CORRECTION_COLUMNS = ['id', 'seq', 'night_id', 'ts', 'field', 'value'] as const;
 
 async function writePage(ex: Executor, page: SyncPage): Promise<void> {
   await insertRows(
@@ -128,7 +158,8 @@ async function writePage(ex: Executor, page: SyncPage): Promise<void> {
     page.aggregates.map((a) => [a.seq, a.ts, a.kind, a.avg, a.lo, a.hi, a.hist]),
   );
   // Une nuit reçue deux fois : la version du collecteur remplace la copie, sauf si elle est plus
-  // ancienne que celle déjà copiée. La mention « corrigé » connue du téléphone est gardée.
+  // ancienne que celle déjà copiée. L'origine servie fait foi — le téléphone ne tient plus sa
+  // propre mémoire des corrections (arbitrage §9.1 du 2026-09-16).
   await insertRows(
     ex,
     `INSERT INTO night (${NIGHT_COLUMNS.join(', ')})`,
@@ -137,6 +168,18 @@ async function writePage(ex: Executor, page: SyncPage): Promise<void> {
       .join(', ')} WHERE excluded.seq >= night.seq`,
     NIGHT_COLUMNS.length,
     page.nights.map((n) => NIGHT_COLUMNS.map((c) => n[c] ?? null)),
+  );
+  // Le journal des corrections voyage avec sa nuit. Gardé dans la copie pour qu'elle reste
+  // complète si le collecteur est effacé (arbitrage §9.2) ; rien ne l'affiche aujourd'hui.
+  const corrections = page.nights.flatMap((n) => n.corrections ?? []);
+  await insertRows(
+    ex,
+    `INSERT INTO correction (${CORRECTION_COLUMNS.join(', ')})`,
+    `ON CONFLICT(id) DO UPDATE SET ${CORRECTION_COLUMNS.filter((c) => c !== 'id')
+      .map((c) => `${c} = excluded.${c}`)
+      .join(', ')}`,
+    CORRECTION_COLUMNS.length,
+    corrections.map((c) => CORRECTION_COLUMNS.map((col) => c[col] ?? null)),
   );
   await insertRows(
     ex,
@@ -243,22 +286,13 @@ export async function copyCounts(): Promise<CopyCounts> {
 
 /**
  * Une nuit renvoyée par le collecteur après un geste ou une correction : c'est l'état confirmé,
- * pas un affichage optimiste. `correctedField` garde en mémoire qu'une heure a été corrigée ici,
- * ce que le collecteur ne sert pas encore (écart 2).
+ * pas un affichage optimiste. Elle porte son origine servie et son relevé — le téléphone n'a plus
+ * rien à en retenir de son côté (arbitrage §9.1).
  */
-export async function storeNightFromCollector(
-  night: Night,
-  correctedFields: readonly string[] = [],
-): Promise<void> {
+export async function storeNightFromCollector(night: Night): Promise<void> {
   const db = await getDb();
   await db.withExclusiveTransactionAsync(async (txn) => {
     await writePage(txn, { readings: [], aggregates: [], outages: [], nights: [night] });
-    if (correctedFields.length > 0) {
-      const row = await txn.getFirstAsync<{ corrected: string | null }>('SELECT corrected FROM night WHERE id = ?', night.id);
-      const set = new Set((row?.corrected ?? '').split(',').filter(Boolean));
-      correctedFields.forEach((f) => set.add(f));
-      await txn.runAsync('UPDATE night SET corrected = ? WHERE id = ?', [...set].join(','), night.id);
-    }
   });
 }
 
@@ -269,15 +303,17 @@ export async function readEverything(): Promise<{
   readings: Reading[];
   aggregates: Aggregate[];
   outages: Outage[];
+  corrections: NightCorrection[];
 }> {
   const db = await getDb();
-  const [nights, readings, aggregates, outages] = await Promise.all([
-    db.getAllAsync<StoredNight>('SELECT * FROM night ORDER BY id'),
+  const [nights, readings, aggregates, outages, corrections] = await Promise.all([
+    db.getAllAsync<StoredNight>(`SELECT ${NIGHT_COLUMNS.join(', ')} FROM night ORDER BY id`),
     db.getAllAsync<Reading>('SELECT * FROM reading ORDER BY seq'),
     db.getAllAsync<Aggregate>('SELECT * FROM aggregate ORDER BY seq'),
     db.getAllAsync<Outage>('SELECT * FROM outage ORDER BY id'),
+    db.getAllAsync<NightCorrection>(`SELECT ${CORRECTION_COLUMNS.join(', ')} FROM correction ORDER BY id`),
   ]);
-  return { nights, readings, aggregates, outages };
+  return { nights, readings, aggregates, outages, corrections };
 }
 
 /** Restauration : remplacement complet et atomique, jamais partiel (cadrage §3.E). */
@@ -286,15 +322,19 @@ export async function replaceEverything(data: {
   readings: Reading[];
   aggregates: Aggregate[];
   outages: Outage[];
+  corrections: NightCorrection[];
   cursor: SyncCursor;
 }): Promise<void> {
   const db = await getDb();
   await db.withExclusiveTransactionAsync(async (txn) => {
-    await txn.execAsync('DELETE FROM reading; DELETE FROM aggregate; DELETE FROM night; DELETE FROM outage;');
-    await writePage(txn, { readings: data.readings, aggregates: data.aggregates, nights: data.nights, outages: data.outages });
-    for (const n of data.nights) {
-      if (n.corrected) await txn.runAsync('UPDATE night SET corrected = ? WHERE id = ?', n.corrected, n.id);
-    }
+    await txn.execAsync('DELETE FROM reading; DELETE FROM aggregate; DELETE FROM night; DELETE FROM outage; DELETE FROM correction;');
+    // Le journal d'une sauvegarde de version 1 est vide : les nuits y portent déjà leur origine.
+    await writePage(txn, {
+      readings: data.readings,
+      aggregates: data.aggregates,
+      outages: data.outages,
+      nights: data.nights.map((n, i) => (i === 0 ? { ...n, corrections: data.corrections } : n)),
+    });
     for (const [k, v] of Object.entries(data.cursor) as [keyof SyncCursor, number | string | null][]) {
       await setMetaWith(txn, CURSOR_KEYS[k], v === null ? null : String(v));
     }

@@ -7,26 +7,33 @@
  * d'import partiel (cadrage §3.E).
  */
 import type { SyncCursor } from '../data/sync';
-import type { Aggregate, DeviceMirror, Night, Outage, Reading } from '../data/types';
+import type { Aggregate, DeviceMirror, Night, NightCorrection, Outage, Reading, SettingsSnapshot } from '../data/types';
 
 export const BACKUP_FORMAT = 'sleepmaxxer-backup';
-export const BACKUP_VERSION = 1;
+/** 2 depuis le 2026-09-16 : le journal des corrections et l'instantané des réglages s'y ajoutent.
+ *  Une sauvegarde de version 1 se relit telle quelle — ses deux champs arrivent vides. */
+export const BACKUP_VERSION = 2;
 
 /** Palier du rappel de sauvegarde, en jours (cadrage §6 : compté en jours, la donnée arrivant seule). */
 export const REMINDER_DAYS = 7;
 
-/** Une nuit de la copie locale : celle du collecteur, plus ce que le téléphone sait des corrections. */
-export interface StoredNight extends Night {
-  corrected: string | null;
-}
+/**
+ * Une nuit de la copie locale. Depuis le 2026-09-16, elle ne porte rien que le collecteur n'ait
+ * servi : l'origine servie fait foi, le téléphone n'a plus de mémoire des corrections (§9.1).
+ */
+export type StoredNight = Night;
 
 export interface BackupContent {
   nights: StoredNight[];
   readings: Reading[];
   aggregates: Aggregate[];
   outages: Outage[];
+  corrections: NightCorrection[];
   cursor: SyncCursor;
   settings: DeviceMirror | null;
+  /** L'instantané des seize profils, **à côté** de `settings` et non à sa place (§9.6) : s'il
+   *  manque, l'export garde ce que `settings` donnait déjà. */
+  snapshot: SettingsSnapshot | null;
 }
 
 const READING_COLUMNS = ['seq', 'ts', 'mslux', 'mstmp', 'msrhu', 'mssnd', 'avlux', 'avtmp', 'avrhu', 'avsnd'] as const;
@@ -43,8 +50,10 @@ export function buildBackup(content: BackupContent, exportedAt: number, appVersi
     // Colonnes nommées une fois : un an de relevés se compte déjà en dizaines de Mo.
     readings: { columns: READING_COLUMNS, rows: content.readings.map((r) => READING_COLUMNS.map((c) => r[c])) },
     aggregates: { columns: AGGREGATE_COLUMNS, rows: content.aggregates.map((a) => AGGREGATE_COLUMNS.map((c) => a[c])) },
+    corrections: content.corrections,
     cursor: content.cursor,
     settings: content.settings,
+    snapshot: content.snapshot,
   });
 }
 
@@ -79,7 +88,16 @@ function validNight(n: unknown): n is StoredNight {
   return (
     isNum(o.id) && isNum(o.seq) && typeof o.day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(o.day) &&
     isNumOrNull(o.bedtime) && isNumOrNull(o.risetime) && typeof o.state === 'string' && NIGHT_STATES.has(o.state) &&
-    isStrOrNull(o.bedtime_origin ?? null) && isStrOrNull(o.risetime_origin ?? null) && isStrOrNull(o.corrected ?? null)
+    isStrOrNull(o.bedtime_origin ?? null) && isStrOrNull(o.risetime_origin ?? null)
+  );
+}
+
+function validCorrection(c: unknown): c is NightCorrection {
+  if (!c || typeof c !== 'object') return false;
+  const x = c as Record<string, unknown>;
+  return (
+    isNum(x.id) && isNum(x.seq) && isNum(x.night_id) && isNum(x.ts) &&
+    (x.field === 'bedtime' || x.field === 'risetime') && isNumOrNull(x.value ?? null)
   );
 }
 
@@ -108,6 +126,9 @@ export function parseBackup(text: string): ParsedBackup {
   const readings = table<Reading>(b.readings, READING_COLUMNS, (r) => isNum(r[0]) && isNum(r[1]) && r.slice(2).every(isNumOrNull));
   const aggregates = table<Aggregate>(b.aggregates, AGGREGATE_COLUMNS, (r) => isNum(r[0]) && isNum(r[1]) && isStrOrNull(r[2]));
   if (!readings || !aggregates) return corrupt;
+  // Version 1 : ni journal ni instantané. Leur absence n'est pas une corruption.
+  const rawCorrections = b.corrections ?? [];
+  if (!Array.isArray(rawCorrections) || !rawCorrections.every(validCorrection)) return corrupt;
   const c = (b.cursor ?? {}) as Record<string, unknown>;
   const cursor: SyncCursor = {
     highSeq: isNum(c.highSeq) ? c.highSeq : null,
@@ -124,8 +145,10 @@ export function parseBackup(text: string): ParsedBackup {
       outages: b.outages as Outage[],
       readings,
       aggregates,
+      corrections: rawCorrections as NightCorrection[],
       cursor,
       settings: (b.settings as DeviceMirror | null) ?? null,
+      snapshot: (b.snapshot as SettingsSnapshot | null) ?? null,
     },
   };
 }

@@ -59,12 +59,19 @@ export async function nightGesture(kind: 'bedtime' | 'risetime'): Promise<Comman
   return outcome;
 }
 
-/** La seule écriture du téléphone dans la mémoire du collecteur (cadrage §5). */
-export async function correctNight(id: number, field: 'bedtime' | 'risetime', value: number): Promise<CommandOutcome> {
+/**
+ * La seule écriture du téléphone dans la mémoire du collecteur (cadrage §5). `value: null` revient
+ * au relevé. La nuit renvoyée porte son origine servie : rien à retenir de plus ici (arbitrage §9.1).
+ */
+export async function correctNight(
+  id: number,
+  field: 'bedtime' | 'risetime',
+  value: number | null,
+): Promise<CommandOutcome> {
   const outcome = await command((api) => api.correctNight(id, field, value));
   const night = outcome.ok ? (outcome.body.night as NightDetail | null | undefined) : null;
   if (night) {
-    await storeNightFromCollector(night, [field]);
+    await storeNightFromCollector(night);
     bumpData();
   }
   return outcome;

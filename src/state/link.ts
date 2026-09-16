@@ -53,6 +53,11 @@ function deviceCauseTitle(cause: string | null): { title: string; note: string }
   if (cause === 'appareil saturé') {
     return { title: 'Le réveil est saturé', note: 'Le collecteur réessaie de lui-même' };
   }
+  // Écrit par le collecteur depuis le 2026-09-15, quelques secondes après son redémarrage. Ce
+  // n'est pas le réveil qui est en cause : ne jamais fondre les deux (AGENTS.md).
+  if (cause === 'collecteur arrêté') {
+    return { title: 'Le collecteur vient de redémarrer', note: 'Il reprend contact avec le réveil' };
+  }
   return { title: 'Le réveil ne répond pas', note: "Le réveil n'est pas joignable" };
 }
 

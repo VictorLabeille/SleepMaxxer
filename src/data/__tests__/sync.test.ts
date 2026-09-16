@@ -84,14 +84,44 @@ describe('rattrapage de la copie locale', () => {
     expect(c.calls).toEqual([]);
   });
 
-  it('garde le type d’un agrégat que le rattrapage par séquence efface', async () => {
+  it('range le type d’un agrégat servi sous aggregate_kind', async () => {
     const c = populated();
     const store = new MemoryStore();
     await runSync(c.api(), store, { now });
     const inNight = c.aggregates.find((a) => a.kind === 'temp' && a.ts > T0 + 19 * DAY);
     const outside = c.aggregates.find((a) => a.kind === 'hum');
     expect(store.aggregates.get(inNight?.seq ?? -1)?.kind).toBe('temp');
-    // arrivé seulement par `since_seq` : type perdu côté collecteur, pas deviné ici
+    // hors de toute nuit : n'arrive que par `since_seq`, et son type vient avec
+    expect(store.aggregates.get(outside?.seq ?? -1)?.kind).toBe('hum');
+  });
+
+  it('accepte encore l’ancien contrat, où le type d’un agrégat manque', async () => {
+    const c = populated();
+    c.legacy = true;
+    const store = new MemoryStore();
+    await runSync(c.api(), store, { now });
+    const outside = c.aggregates.find((a) => a.kind === 'hum');
+    // pas deviné : il restera sans type jusqu'à la passe de réparation
     expect(store.aggregates.get(outside?.seq ?? -1)?.kind).toBeNull();
+    expect(store.nights.size).toBe(20);
+  });
+
+  it('sert le relevé et le journal à côté d’une heure corrigée', async () => {
+    const c = populated();
+    const store = new MemoryStore();
+    await runSync(c.api(), store, { now });
+    const releve = c.nights[2].bedtime;
+    c.correct(3, 'bedtime', (releve ?? 0) - 600);
+    await runSync(c.api(), store, { now });
+    const n = store.nights.get(3);
+    expect(n?.bedtime_origin).toBe('corrected');
+    expect(n?.bedtime_observed).toBe(releve);
+    expect(n?.corrections?.map((x) => x.value)).toEqual([(releve ?? 0) - 600]);
+
+    // retour au relevé : la valeur qui fait foi redevient celle d'origine
+    c.correct(3, 'bedtime', null);
+    await runSync(c.api(), store, { now });
+    expect(store.nights.get(3)?.bedtime).toBe(releve);
+    expect(store.nights.get(3)?.corrections).toHaveLength(2);
   });
 });

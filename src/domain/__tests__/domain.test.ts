@@ -3,7 +3,7 @@ import { alarmEdit, daysLabel, formFromProfile, powerwakeDelta } from '../alarms
 import { backupReminderDue, buildBackup, parseBackup, type BackupContent } from '../backup';
 import { lightThemes, soundName, wakeSounds } from '../catalog';
 import { durationLong, durationShort, formatMeasure, formatNumber, nightLabel } from '../format';
-import { currentNight, inBedSeconds, nightPhase, timeOrigin } from '../nights';
+import { currentNight, inBedSeconds, nightPhase, observedTime, timeOrigin } from '../nights';
 import { findGaps, gapCause, summarize } from '../stats';
 import { coachSummary } from '../summary';
 import { bandFor, METRICS, verdict } from '../thresholds';
@@ -76,10 +76,21 @@ describe('mise en forme', () => {
 describe('nuits', () => {
   it('restitue l’origine de chaque heure', () => {
     const n = night();
-    expect(timeOrigin(n, 'bedtime', new Set())).toBe('confirmé');
-    expect(timeOrigin(n, 'risetime', new Set())).toBe('estimé');
-    expect(timeOrigin(n, 'risetime', new Set(['risetime']))).toBe('corrigé');
-    expect(timeOrigin(night({ risetime: null, state: 'abnormal' }), 'risetime', new Set())).toBeNull();
+    expect(timeOrigin(n, 'bedtime')).toBe('confirmé');
+    expect(timeOrigin(n, 'risetime')).toBe('estimé');
+    expect(timeOrigin(night({ risetime_origin: 'corrected' }), 'risetime')).toBe('corrigé');
+    expect(timeOrigin(night({ risetime: null, state: 'abnormal' }), 'risetime')).toBeNull();
+  });
+
+  it('montre le relevé d’une heure corrigée, et rien sinon', () => {
+    const corrigee = night({
+      bedtime: at(2026, 9, 13, 23, 14), bedtime_origin: 'corrected',
+      bedtime_observed: at(2026, 9, 13, 23, 41), bedtime_observed_origin: 'observed',
+    });
+    expect(observedTime(corrigee, 'bedtime')).toEqual({ value: at(2026, 9, 13, 23, 41), origin: 'confirmé' });
+    expect(observedTime(corrigee, 'risetime')).toBeNull();
+    // une nuit copiée avant le contrat du 2026-09-15 n'a pas de relevé à montrer
+    expect(observedTime(night({ bedtime_origin: 'corrected' }), 'bedtime')).toBeNull();
   });
 
   it('ne présente jamais un appui retenu comme un suivi en cours', () => {
@@ -193,12 +204,14 @@ describe('vues agrégées', () => {
 
 describe('sauvegarde', () => {
   const content: BackupContent = {
-    nights: [{ ...night(), corrected: 'bedtime' }],
+    nights: [night()],
     readings: [{ seq: 1, ts: 10, mslux: 0, mstmp: 20.5, msrhu: 50, mssnd: 30, avlux: null, avtmp: null, avrhu: null, avsnd: null }],
     aggregates: [{ seq: 2, ts: 11, kind: 'temp', avg: 1, lo: 0, hi: 2, hist: null }],
     outages: [{ id: 1, seq: 3, start: 5, end: null, cause: 'réveil injoignable', failures: 2 }],
+    corrections: [{ id: 1, seq: 4, night_id: 1, ts: 12, field: 'bedtime', value: null }],
     cursor: { highSeq: 3, liveSeq: 3, backfillSeq: 3, recentBefore: null, suspended: null },
     settings: null,
+    snapshot: null,
   };
 
   it('se relit à l’identique', () => {
@@ -210,8 +223,18 @@ describe('sauvegarde', () => {
     const text = buildBackup(content, 100, '1.0.0');
     expect(parseBackup(text.slice(0, text.length / 2)).ok).toBe(false);
     expect(parseBackup(JSON.stringify({ format: 'autre' })).ok).toBe(false);
-    expect(parseBackup(text.replace('"version":1', '"version":2')).ok).toBe(false);
+    expect(parseBackup(text.replace('"version":2', '"version":3')).ok).toBe(false);
     expect(parseBackup(text.replace('20.5', '"vingt"')).ok).toBe(false);
+  });
+
+  it('relit une sauvegarde de version 1, sans journal ni instantané', () => {
+    const v1 = JSON.stringify({
+      ...JSON.parse(buildBackup(content, 100, '1.0.0')),
+      version: 1, corrections: undefined, snapshot: undefined,
+    });
+    const parsed = parseBackup(v1);
+    expect(parsed.ok && parsed.content.corrections).toEqual([]);
+    expect(parsed.ok && parsed.content.snapshot).toBeNull();
   });
 
   it('rappelle la sauvegarde au palier, et pas avant', () => {

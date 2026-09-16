@@ -37,17 +37,30 @@ export function isInProgress(n: Night): boolean {
  * déduit rien, et sans geste il n'ouvre aucune nuit. Le libellé est gardé pour le jour où une
  * déduction existera : le collecteur relève déjà la lumière et le bruit de la chambre.
  */
-export function timeOrigin(
-  n: Night,
-  field: 'bedtime' | 'risetime',
-  corrected: ReadonlySet<string>,
-): TimeOrigin | null {
+export function timeOrigin(n: Night, field: 'bedtime' | 'risetime'): TimeOrigin | null {
   const value = field === 'bedtime' ? n.bedtime : n.risetime;
   if (value === null) return null;
   const origin = field === 'bedtime' ? n.bedtime_origin : n.risetime_origin;
-  if (corrected.has(field) || origin === 'corrected') return 'corrigé';
+  if (origin === 'corrected') return 'corrigé';
   if (origin === 'estimated') return 'estimé';
   return 'confirmé';
+}
+
+/**
+ * Le relevé d'une heure corrigée, à montrer à côté d'elle — le cadrage exige que la valeur
+ * d'origine reste consultable. `null` quand l'heure n'est pas corrigée, et quand la nuit a été
+ * copiée avant le 2026-09-15 : le collecteur ne servait pas encore le relevé.
+ */
+export function observedTime(
+  n: Night,
+  field: 'bedtime' | 'risetime',
+): { value: number; origin: TimeOrigin } | null {
+  const origin = field === 'bedtime' ? n.bedtime_origin : n.risetime_origin;
+  if (origin !== 'corrected') return null;
+  const value = field === 'bedtime' ? n.bedtime_observed : n.risetime_observed;
+  if (value === null || value === undefined) return null;
+  const observed = field === 'bedtime' ? n.bedtime_observed_origin : n.risetime_observed_origin;
+  return { value, origin: observed === 'estimated' ? 'estimé' : 'confirmé' };
 }
 
 /** Temps au lit ; pour une nuit en cours, la durée qui court. */
@@ -90,8 +103,4 @@ export function resolveCorrection(n: Night, field: 'bedtime' | 'risetime', hour:
   }
   const after = candidates.filter((c) => n.bedtime === null || c > n.bedtime);
   return after.length > 0 ? after[0] : candidates[1];
-}
-
-export function parseCorrected(value: string | null | undefined): Set<string> {
-  return new Set((value ?? '').split(',').filter(Boolean));
 }

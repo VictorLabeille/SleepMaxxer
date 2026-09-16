@@ -9,7 +9,7 @@ import { Pressable, ScrollView, View } from 'react-native';
 
 import type { StoredNight } from '../domain/backup';
 import { durationShort, formatMeasure, hhmm } from '../domain/format';
-import { inBedSeconds, isInProgress, nightPhase, parseCorrected, resolveCorrection, timeOrigin, type TimeOrigin } from '../domain/nights';
+import { inBedSeconds, isInProgress, nightPhase, observedTime, resolveCorrection, timeOrigin, type TimeOrigin } from '../domain/nights';
 import { findGaps, READING_KEY, summarize, type Summary } from '../domain/stats';
 import { coachSummary } from '../domain/summary';
 import { METRIC_ORDER, METRICS, THRESHOLDS_SOURCE, verdict, type Metric } from '../domain/thresholds';
@@ -49,7 +49,8 @@ function Disk({ night, now }: { night: StoredNight; now: number }) {
   );
 }
 
-function TimePill({ label, time, origin, placeholder }: { label: string; time: number | null; origin: TimeOrigin | null; placeholder: string }) {
+/** Une heure corrigée montre le relevé sous elle : le cadrage veut la valeur d'origine consultable. */
+function TimePill({ label, time, origin, observed, placeholder }: { label: string; time: number | null; origin: TimeOrigin | null; observed: { value: number; origin: TimeOrigin } | null; placeholder: string }) {
   return (
     <Card style={{ flex: 1, padding: 14, alignItems: 'center', gap: 5 }}>
       <T size={12} color={colors.textMuted}>{label}</T>
@@ -57,13 +58,15 @@ function TimePill({ label, time, origin, placeholder }: { label: string; time: n
       <T size={10.5} weight="semibold" color={origin ? ORIGIN_COLOR[origin] : colors.textFaint} style={{ letterSpacing: 0.4, textTransform: 'uppercase' }}>
         {origin ?? ' '}
       </T>
+      {observed ? (
+        <T size={10.5} color={colors.textFaint}>{`relevé ${hhmm(observed.value)}`}</T>
+      ) : null}
     </Card>
   );
 }
 
 export function BedView({ night, canCorrect, correctReason, now }: { night: StoredNight; canCorrect: boolean; correctReason: string | null; now: number }) {
   const phase = nightPhase(night);
-  const corrected = parseCorrected(night.corrected);
   const inProgress = isInProgress(night);
   const [editing, setEditing] = useState(false);
   const [picker, setPicker] = useState<'bedtime' | 'risetime' | null>(null);
@@ -104,6 +107,20 @@ export function BedView({ night, canCorrect, correctReason, now }: { night: Stor
     }
   };
 
+  /** Lever la correction : `value: null` rend la main au relevé, et le retour entre au journal. */
+  const revert = async (field: 'bedtime' | 'risetime') => {
+    setBusy(true);
+    setError(null);
+    const r = await correctNight(night.id, field, null);
+    setBusy(false);
+    if (r.ok) setDone(`Heure de ${field === 'bedtime' ? 'coucher' : 'lever'} revenue au relevé.`);
+    else setError(r.message);
+  };
+
+  const revertable = (['bedtime', 'risetime'] as const)
+    .map((field) => ({ field, observed: observedTime(night, field) }))
+    .filter((r): r is { field: 'bedtime' | 'risetime'; observed: { value: number; origin: TimeOrigin } } => r.observed !== null);
+
   return (
     <View style={{ alignItems: 'center', gap: 20, paddingTop: 18, paddingHorizontal: 20 }}>
       <Disk night={night} now={now} />
@@ -117,19 +134,30 @@ export function BedView({ night, canCorrect, correctReason, now }: { night: Stor
         <Notice style={{ alignSelf: 'stretch' }}>Nuit close par l’alarme : le lever sera pris à la fin de la sonnerie.</Notice>
       ) : null}
       <View style={{ flexDirection: 'row', gap: 12, alignSelf: 'stretch' }}>
-        <TimePill label="Coucher" time={night.bedtime} origin={timeOrigin(night, 'bedtime', corrected)} placeholder="—" />
-        <TimePill label="Lever" time={night.risetime} origin={timeOrigin(night, 'risetime', corrected)} placeholder={inProgress ? 'en cours' : '—'} />
+        <TimePill label="Coucher" time={night.bedtime} origin={timeOrigin(night, 'bedtime')} observed={observedTime(night, 'bedtime')} placeholder="—" />
+        <TimePill label="Lever" time={night.risetime} origin={timeOrigin(night, 'risetime')} observed={observedTime(night, 'risetime')} placeholder={inProgress ? 'en cours' : '—'} />
       </View>
       {editing ? (
         <Card style={{ alignSelf: 'stretch', overflow: 'hidden' }}>
           <Row label="Heure de coucher" value={night.bedtime !== null ? hhmm(night.bedtime) : '—'} disabled={!canCorrect} onPress={() => { setError(null); setPicker('bedtime'); }} />
-          <Row label="Heure de lever" value={night.risetime !== null ? hhmm(night.risetime) : '—'} disabled={!canCorrect || inProgress} onPress={() => { setError(null); setPicker('risetime'); }} last />
+          <Row label="Heure de lever" value={night.risetime !== null ? hhmm(night.risetime) : '—'} disabled={!canCorrect || inProgress} onPress={() => { setError(null); setPicker('risetime'); }} last={revertable.length === 0} />
+          {revertable.map(({ field, observed }, i) => (
+            <Row
+              key={field}
+              label={`Revenir à l’heure relevée (${field === 'bedtime' ? 'coucher' : 'lever'})`}
+              value={hhmm(observed.value)}
+              disabled={!canCorrect || busy}
+              onPress={() => void revert(field)}
+              last={i === revertable.length - 1}
+            />
+          ))}
           <T size={11.5} color="rgba(255,255,255,0.42)" style={{ paddingHorizontal: 18, paddingBottom: 14 }}>
             {canCorrect ? 'La correction s’enregistre dans le collecteur. Elle ne touche pas ce que le réveil a enregistré.' : correctReason ?? ''}
           </T>
         </Card>
       ) : null}
       {done ? <Notice style={{ alignSelf: 'stretch' }}>{done}</Notice> : null}
+      {error !== null && picker === null ? <Notice tone="error" style={{ alignSelf: 'stretch' }}>{error}</Notice> : null}
       <Button label={editing ? 'Terminer' : 'Corriger les heures'} onPress={() => { setEditing(!editing); setDone(null); }} style={{ alignSelf: 'stretch' }} />
       <TimeSheet
         visible={picker !== null}
@@ -208,11 +236,10 @@ export function SummarySheet({ visible, onClose, night, series }: { visible: boo
   useEffect(() => {
     if (visible) setCopied(false);
   }, [visible]);
-  const corrected = parseCorrected(night.corrected);
   const result = coachSummary({
     night,
-    bedtimeOrigin: timeOrigin(night, 'bedtime', corrected),
-    risetimeOrigin: timeOrigin(night, 'risetime', corrected),
+    bedtimeOrigin: timeOrigin(night, 'bedtime'),
+    risetimeOrigin: timeOrigin(night, 'risetime'),
     stats: nightStats(series),
     conditionsUnavailable: series ? undefined : NO_RISE_CONDITIONS,
   });

@@ -10,8 +10,9 @@
  * 2. **Au fil de l'eau** : `since_seq` depuis le dernier élément reçu. Une nuit corrigée après
  *    copie reprend une séquence plus récente et revient d'office.
  * 3. **Tout le reste** : `since_seq=0` jusqu'à la séquence de référence, en fond. Le mode
- *    `before` ne porte ni les points hors des nuits, ni les indisponibilités (écart 6 du
- *    collecteur) : sans cette passe, la copie ne serait pas complète.
+ *    `before` ne porte ni les points hors des nuits, ni les indisponibilités : sans cette passe,
+ *    la copie ne serait pas complète. Ces trois passes sont le mode d'emploi officiel du
+ *    collecteur depuis le 2026-09-15 — ce n'est plus le contournement d'un écart.
  *
  * Les points sont dédoublonnés par `seq`, les nuits par `id` — une nuit reçue deux fois est
  * remplacée par la version la plus récente du collecteur.
@@ -86,10 +87,11 @@ export function pageFromItems(items: readonly SyncItem[]): SyncPage {
         break;
       }
       case 'aggregate': {
-        // Le collecteur a écrasé le type de l'agrégat avec le genre de l'élément (écart 4) :
-        // on le stocke sans type plutôt que de le deviner.
-        const { kind: _k, ...rest } = item;
-        page.aggregates.push({ ...rest, kind: null });
+        // `kind` porte le genre de l'élément ; le type de l'agrégat arrive sous `aggregate_kind`
+        // (contrat du 2026-09-15). Absent d'un collecteur plus ancien : l'agrégat se range sans
+        // type, et `writePage` le remplira quand il repassera.
+        const { kind: _k, aggregate_kind: typed, ...rest } = item;
+        page.aggregates.push({ ...rest, kind: typed ?? null });
         break;
       }
       case 'night': {

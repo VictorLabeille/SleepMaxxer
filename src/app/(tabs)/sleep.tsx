@@ -8,7 +8,7 @@ import { Pressable, useWindowDimensions, View } from 'react-native';
 
 import type { StoredNight } from '../../domain/backup';
 import { addDays, dayMonth, durationLong, hhmm, isoDay, monthYear, nightLabel, parseDay } from '../../domain/format';
-import { parseCorrected } from '../../domain/nights';
+import { timeOrigin } from '../../domain/nights';
 import { averageInBed, monthOf, nightBar, nightsIn, previousRange, rangeDays, weekOf, type Bar, type Period } from '../../domain/views';
 import { connect, refreshLive } from '../../state/controller';
 import { useBackupReminder, useCopyLabel, useLink, useNights, useNightSeries, useNow } from '../../state/hooks';
@@ -23,7 +23,7 @@ import { colors } from '../../ui/theme';
 const PERIOD_LABEL: Record<Period, string> = { day: 'Jours', week: 'Semaine', month: 'Mois' };
 const WEEK_LETTERS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
-const isEstimated = (n: StoredNight) => n.risetime_origin === 'estimated' && !parseCorrected(n.corrected).has('risetime');
+const isEstimated = (n: StoredNight) => timeOrigin(n, 'risetime') === 'estimé';
 
 function ArrowButton({ direction, onPress, disabled }: { direction: 'left' | 'right'; onPress: () => void; disabled: boolean }) {
   return (

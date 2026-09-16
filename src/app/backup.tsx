@@ -26,6 +26,7 @@ export default function BackupScreen() {
   const sync = useApp((s) => s.sync);
   const version = useApp((s) => s.dataVersion);
   const collector = useApp((s) => s.collector);
+  const status = useApp((s) => s.status);
   const now = useNow();
   const [bump, setBump] = useState(0);
   const { data: counts } = useAsync(copyCounts, [version]);
@@ -132,6 +133,17 @@ export default function BackupScreen() {
         <Row label="Rattrapage" value={syncState} />
         <Row label="Dernier export" value={lastExport ? dateTimeShort(lastExport) : 'Jamais'} last />
       </Card>
+      {/* Troisième panne, distincte du collecteur muet et du réveil injoignable : l'heure de la
+          carte. L'app la signale, elle ne corrige rien (cadrage §3.F, arbitrage §9.5). */}
+      {status?.collecteur.heure_synchronisee === false ? (
+        <Notice tone="warn" style={{ marginHorizontal: 16, marginBottom: 14 }}>
+          <T size={12.5} color="#fac285">
+            L’heure de la carte n’est pas encore synchronisée : elle est repartie d’une coupure sans
+            avoir revu le réseau. Ce qui a été daté depuis peut être décalé — l’app le signale, elle
+            ne corrige rien.
+          </T>
+        </Notice>
+      ) : null}
       {sync.suspended ? <Notice tone="warn" style={{ marginHorizontal: 16, marginBottom: 14 }}>{sync.suspended}</Notice> : null}
       {sync.error ? <Notice tone="error" style={{ marginHorizontal: 16, marginBottom: 14 }}>{sync.error}</Notice> : null}
       <Button label="Rattraper maintenant" icon="refresh" onPress={() => void syncNow()} loading={sync.running} disabled={collector !== 'ok' || !!sync.suspended} style={{ marginHorizontal: 16, marginBottom: 24 }} />

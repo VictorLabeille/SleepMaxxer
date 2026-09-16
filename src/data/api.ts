@@ -6,11 +6,13 @@
  * second cas est une réponse, pas une erreur réseau, et il se lit dans le code HTTP.
  */
 import type {
+  Aggregate,
   AlarmEdit,
   CatalogResponse,
   CollectorStatus,
   DeviceMirror,
   NightDetail,
+  SettingsSnapshot,
   SunsetSettings,
   SyncBeforeResponse,
   SyncSinceResponse,
@@ -50,7 +52,12 @@ export interface CollectorApi {
   syncSince(sinceSeq: number, limit: number): Promise<SyncSinceResponse>;
   bedtime(): Promise<WriteResult>;
   risetime(): Promise<WriteResult>;
-  correctNight(id: number, field: 'bedtime' | 'risetime', value: number): Promise<WriteResult>;
+  /** `value: null` revient au relevé : la correction en vigueur est levée. */
+  correctNight(id: number, field: 'bedtime' | 'risetime', value: number | null): Promise<WriteResult>;
+  /** L'instantané des réglages, pour l'export. `null` si le collecteur ne le sert pas encore. */
+  settingsSnapshot(): Promise<SettingsSnapshot | null>;
+  /** Tous les agrégats d'une période — sert la passe de réparation des types manquants. */
+  aggregatesFrom(from: number, to: number): Promise<Aggregate[]>;
   light(on: boolean, level?: number): Promise<WriteResult>;
   nightlight(on: boolean): Promise<WriteResult>;
   sunset(on: boolean): Promise<WriteResult>;
@@ -124,6 +131,20 @@ export function createCollectorApi(baseUrl: string, fetchImpl: typeof fetch = fe
     risetime: () => write('POST', '/v1/nights/risetime'),
     correctNight: (id, field, value) =>
       write('POST', `/v1/nights/${id}/corrections`, { field, value }),
+    // Absentes d'un collecteur antérieur au 2026-09-15 : un 404 n'est pas une panne, il dit que
+    // la route n'existe pas encore. L'export s'en passe, la réparation ne se lance pas.
+    async settingsSnapshot() {
+      try {
+        return await get<SettingsSnapshot>('/v1/settings/snapshot');
+      } catch (e) {
+        if (e instanceof CollectorHttpError && e.status === 404) return null;
+        throw e;
+      }
+    },
+    async aggregatesFrom(from, to) {
+      const r = await get<{ aggregates?: Aggregate[] }>(`/v1/aggregates?from=${from}&to=${to}`);
+      return r.aggregates ?? [];
+    },
     light: (on, level) => write('PUT', '/v1/light', level === undefined ? { on } : { on, level }),
     nightlight: (on) => write('PUT', '/v1/nightlight', { on }),
     sunset: (on) => write('PUT', '/v1/sunset', { on }),

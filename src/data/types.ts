@@ -28,6 +28,14 @@ export interface Night {
   risetime_origin: string | null;
   raw_tg2bd: string | null;
   raw_tendb: string | null;
+  /** Le relevé, servi à côté de l'heure qui fait foi : une correction ne l'écrase jamais. Absents
+   *  d'une nuit copiée avant le 2026-09-15 — le collecteur ne les servait pas encore. */
+  bedtime_observed?: Epoch | null;
+  risetime_observed?: Epoch | null;
+  bedtime_observed_origin?: string | null;
+  risetime_observed_origin?: string | null;
+  /** Journal des corrections de cette nuit, dans l'ordre. */
+  corrections?: NightCorrection[];
 }
 
 export interface NightCorrection {
@@ -36,7 +44,8 @@ export interface NightCorrection {
   night_id: number;
   ts: Epoch;
   field: 'bedtime' | 'risetime';
-  value: Epoch;
+  /** `null` : retour au relevé — la correction en vigueur est levée, et le retour entre au journal. */
+  value: Epoch | null;
 }
 
 export interface NightDetail extends Night {
@@ -61,7 +70,8 @@ export type AggregateKind = 'temp' | 'hum' | 'snd' | 'lux';
 export interface Aggregate {
   seq: number;
   ts: Epoch;
-  /** `null` quand le rattrapage par séquence l'a effacé (écart 4 du collecteur). */
+  /** `null` seulement pour un agrégat copié avant le 2026-09-15, quand le rattrapage par séquence
+   *  effaçait le type (écart 4). Depuis, le type arrive sous `aggregate_kind`. */
   kind: AggregateKind | null;
   avg: number | null;
   lo: number | null;
@@ -82,7 +92,7 @@ export interface Outage {
 /** Un élément de `/v1/sync?since_seq` : la ligne de sa table, plus son genre dans `kind`. */
 export type SyncItem =
   | (Reading & { kind: 'reading' })
-  | (Omit<Aggregate, 'kind'> & { kind: 'aggregate' })
+  | (Omit<Aggregate, 'kind'> & { kind: 'aggregate'; aggregate_kind?: AggregateKind | null })
   | (Night & { kind: 'night' })
   | (Outage & { kind: 'outage' });
 
@@ -138,6 +148,9 @@ export interface CollectorStatus {
     demarre_at: Epoch;
     dernier_battement_at: Epoch | null;
     cadence_wusrd_s: number;
+    /** `false` : la carte est repartie d'une coupure sans avoir revu NTP. L'app le signale, elle
+     *  ne corrige rien (cadrage §3.F). Absent d'un collecteur antérieur au 2026-09-15. */
+    heure_synchronisee?: boolean | null;
   };
   disque: { total: number; libre: number; base_octets: number };
   indisponibilites_ouvertes: Outage[];
@@ -226,6 +239,18 @@ export interface AlarmProfile {
   pszhr: number;
   pszmn: number;
   [field: string]: unknown;
+}
+
+/**
+ * `GET /v1/settings/snapshot` : le dernier corps de chacun des seize profils d'alarme, et les
+ * ports de réglage. Sert l'export — plus riche que `device.last`, qui ne porte que les profils
+ * visibles. `complete` est faux tant que le collecteur n'a pas relu les seize (fenêtre 12 h–18 h).
+ */
+export interface SettingsSnapshot {
+  served_at: Epoch;
+  profiles: Record<string, { body: AlarmProfile; since: Epoch } | undefined>;
+  complete: boolean;
+  ports: Record<string, PortMirror<unknown> | null | undefined>;
 }
 
 export type CatalogFile = 'wakeup' | 'lightthemes' | 'dusklightthemes' | 'winddowndusk';

@@ -23,6 +23,7 @@ export const META_DEVICE = 'device.last';
 const META_CATALOG = 'catalog.last';
 export const META_LAST_SYNC = 'sync.lastOkAt';
 export const META_FIRST_COPY = 'backup.firstCopyAt';
+const META_KIND_REPAIR = 'sync.aggregateKindRepaired';
 
 let api: CollectorApi | null = null;
 let connecting: Promise<void> | null = null;
@@ -136,6 +137,28 @@ function describeSyncError(e: unknown): string {
   return `Le rattrapage s’est interrompu (${message}). Il reprendra là où il s’est arrêté.`;
 }
 
+/**
+ * Réparation unique des agrégats copiés sans type (arbitrage §9.4 du 2026-09-16). Le collecteur
+ * ne sert un agrégat qu'à son changement : ceux déjà en base ne reviendront pas d'eux-mêmes. Une
+ * passe sur `GET /v1/aggregates?from=0` les fait repasser, et la clause `COALESCE` de `writePage`
+ * remplit le type manquant sans toucher au reste. Un drapeau local évite de recommencer ; si la
+ * route manque — collecteur antérieur au 2026-09-15 — le drapeau n'est pas posé et on réessaiera.
+ */
+async function repairAggregateKinds(): Promise<void> {
+  const a = api;
+  if (!a || (await getMeta(META_KIND_REPAIR)) !== null) return;
+  try {
+    const aggregates = await a.aggregatesFrom(0, now());
+    if (aggregates.length > 0) {
+      await sqliteSyncStore.apply({ readings: [], aggregates, nights: [], outages: [] }, {});
+    }
+    await setMeta(META_KIND_REPAIR, String(now()));
+    bumpData();
+  } catch {
+    // Route absente, ou collecteur devenu muet : la réparation attendra la prochaine ouverture.
+  }
+}
+
 export async function syncNow(): Promise<void> {
   const a = api;
   if (!a || useApp.getState().sync.running) return;
@@ -155,6 +178,7 @@ export async function syncNow(): Promise<void> {
       await setMeta(META_LAST_SYNC, String(t));
       if ((await getMeta(META_FIRST_COPY)) === null) await setMeta(META_FIRST_COPY, String(t));
       setSync({ lastOkAt: t, suspended: null });
+      await repairAggregateKinds();
     }
     useApp.setState({ hasCopy: (await copyCounts()).nights > 0 || useApp.getState().hasCopy });
   } catch (e) {

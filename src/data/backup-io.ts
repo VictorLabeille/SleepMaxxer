@@ -9,18 +9,33 @@ import * as Sharing from 'expo-sharing';
 
 import { buildBackup, parseBackup, type BackupContent, type ParsedBackup } from '../domain/backup';
 import { isoDay } from '../domain/format';
+import { getApi } from '../state/controller';
 import { getMetaJson, readEverything, replaceEverything, setMetaJson, sqliteSyncStore } from './db';
-import type { DeviceMirror } from './types';
+import type { DeviceMirror, SettingsSnapshot } from './types';
 
 const DEVICE_KEY = 'device.last';
 
-export async function writeExportFile(): Promise<{ uri: string; bytes: number }> {
-  const [everything, cursor, settings] = await Promise.all([
+/**
+ * L'instantané des réglages vient du collecteur au moment de l'export, **à côté** de `settings`
+ * (arbitrage §9.6). S'il manque — collecteur injoignable, ou antérieur au 2026-09-15 — l'export se
+ * fait quand même : `settings` garde ce qu'il donnait déjà, et l'écran le dit.
+ */
+async function currentSnapshot(): Promise<SettingsSnapshot | null> {
+  try {
+    return (await getApi()?.settingsSnapshot()) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function writeExportFile(): Promise<{ uri: string; bytes: number; snapshot: boolean }> {
+  const [everything, cursor, settings, snapshot] = await Promise.all([
     readEverything(),
     sqliteSyncStore.getCursor(),
     getMetaJson<DeviceMirror>(DEVICE_KEY),
+    currentSnapshot(),
   ]);
-  const content: BackupContent = { ...everything, cursor, settings };
+  const content: BackupContent = { ...everything, cursor, settings, snapshot };
   const text = buildBackup(content, Date.now() / 1000, Constants.expoConfig?.version ?? '0');
   const file = new File(Paths.cache, `sleepmaxxer-${isoDay(new Date())}.json`);
   try {
@@ -30,7 +45,7 @@ export async function writeExportFile(): Promise<{ uri: string; bytes: number }>
   }
   file.create();
   file.write(text);
-  return { uri: file.uri, bytes: text.length };
+  return { uri: file.uri, bytes: text.length, snapshot: content.snapshot !== null };
 }
 
 /**
