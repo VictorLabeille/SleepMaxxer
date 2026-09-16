@@ -82,7 +82,9 @@ Une règle métier va dans `src/domain`, jamais dans un écran.
 - **Ne jamais afficher de façon optimiste le résultat d'une écriture.** Un réglage refusé par
   le réveil ne doit jamais apparaître comme appliqué — sur une alarme, l'illusion se paie au
   réveil. Même règle pour le coucher : tant que le réveil n'a pas reçu l'appui, l'app affiche
-  « en attente du réveil », jamais « suivi en cours » (cadrage §5).
+  « en attente du réveil », jamais « suivi en cours » (cadrage §5). Seule exception, un curseur en
+  cours de saisie : il montre la valeur demandée, toujours marquée comme distincte de la valeur
+  relue — arbitrage en commentaire dans `src/app/(tabs)/index.tsx`.
 - **Ne jamais fondre en un seul message les deux pannes possibles** (collecteur muet / réveil
   injoignable) : dans le second cas l'historique reste entièrement lisible.
 - **Toujours sérialiser les commandes vers le réveil.** Il sature sous une rafale (~25 ko de

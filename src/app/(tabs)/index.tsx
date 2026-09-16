@@ -3,7 +3,7 @@
  * Le geste « je me couche » domine l'écran : il se fait d'une main, dans le noir (cadrage §2).
  */
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import type { Night } from '../../data/types';
@@ -111,50 +111,123 @@ function BedtimeCard({ current, collectorOk }: { current: Night | null; collecto
 function LightCard({ link }: { link: LinkView }) {
   const light = useApp((s) => s.device?.ports.wulgt?.body ?? null);
   const [busy, setBusy] = useState<'onoff' | 'level' | 'night' | null>(null);
-  const [drag, setDrag] = useState<number | null>(null);
+  const [requested, setRequested] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { min, max } = BOUNDS.lightLevel;
   const level = Math.min(max, Math.max(min, light?.ltlvl ?? min));
-  const disabled = !link.canControl || !light || busy !== null;
+  const controllable = link.canControl && !!light;
 
-  const run = async (what: 'onoff' | 'level' | 'night', fn: Parameters<typeof command>[0]) => {
+  /**
+   * Dernière intensité demandée restant à envoyer, et vol en cours. Deux `ref` et non deux états :
+   * la boucle d'envoi les lit entre deux `await`, jamais au rendu.
+   */
+  const queuedLevel = useRef<number | null>(null);
+  const sendingLevel = useRef(false);
+
+  const run = async (what: 'onoff' | 'night', fn: Parameters<typeof command>[0]) => {
     setBusy(what);
     setError(null);
     const r = await command(fn);
     setBusy(null);
-    setDrag(null);
     if (!r.ok) setError(r.message);
   };
+
+  /**
+   * Arbitrage du 2026-09-16, entre deux règles qui se contredisent en apparence : « ne jamais
+   * afficher de façon optimiste le résultat d'une écriture » (`AGENTS.md`) et « le pouce doit
+   * suivre le doigt en permanence ».
+   *
+   * Le curseur est une **entrée**, pas un afficheur. Il montre donc la valeur *demandée* dès
+   * l'appui, sans attendre le réveil — mais cette valeur ne se fait jamais passer pour la valeur
+   * appliquée : tant qu'elle n'est pas relue, elle perd la couleur d'accent (`pending`) et
+   * l'intensité que le réveil a relue reste lisible à côté, dans le `hint`. La demande n'est
+   * libérée que lorsque le réveil a relu exactement cette valeur ; en cas d'échec l'écran revient
+   * à l'état relu et affiche l'erreur. Rien n'est donc jamais montré comme appliqué avant de
+   * l'être — c'est le *statut* de la valeur, pas la valeur elle-même, qui porte la prudence.
+   *
+   * Corollaire : `busy` ne désactive plus ni le curseur ni les boutons, sinon un appui sur deux
+   * est avalé pendant le vol. La sérialisation reste entière (`serialize()` dans `command()`), et
+   * `queuedLevel` ne garde que la dernière valeur demandée : le réveil sature sous une rafale.
+   */
+  const flushLevel = async () => {
+    sendingLevel.current = true;
+    setBusy('level');
+    let failure: string | null = null;
+    while (queuedLevel.current !== null) {
+      const value = queuedLevel.current;
+      // Vidée avant l'envoi : ce qui arrive pendant le vol repart au tour suivant, et les valeurs
+      // intermédiaires périmées ne sont jamais envoyées — seule la dernière a un intérêt.
+      queuedLevel.current = null;
+      const r = await command((api) => api.light(true, value));
+      if (!r.ok) {
+        failure = r.message;
+        queuedLevel.current = null;
+        break;
+      }
+    }
+    sendingLevel.current = false;
+    setBusy(null);
+    if (failure !== null) {
+      setError(failure);
+      setRequested(null);
+    }
+  };
+
+  const requestLevel = (v: number) => {
+    setRequested(v);
+    setError(null);
+    queuedLevel.current = v;
+    if (sendingLevel.current) return; // la boucle en cours repartira avec cette valeur.
+    void flushLevel();
+  };
+
+  /**
+   * Le réveil monte en intensité progressivement : `ltlvl` ne vaut la valeur demandée qu'une fois
+   * la montée finie. La demande tient donc l'affichage jusque-là, sinon le pouce sauterait en
+   * arrière à chaque relecture.
+   */
+  useEffect(() => {
+    if (requested !== null && requested === level) setRequested(null);
+  }, [requested, level]);
+
+  const shown = requested ?? level;
+  const unconfirmed = requested !== null && requested !== level;
+  const levelHint = unconfirmed
+    ? busy === 'level'
+      ? `envoi au réveil… · réveil : ${level}`
+      : `réveil : ${level}`
+    : undefined;
 
   return (
     <Card style={{ marginHorizontal: 16, marginBottom: 24, padding: 18 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
         <Icon name="sun" size={19} color={light?.onoff ? colors.accent : 'rgba(255,255,255,0.72)'} strokeWidth={1.5} />
         <T size={15.5} weight="semibold" style={{ flex: 1 }}>Lumière</T>
-        <Toggle label="Lumière" value={!!light?.onoff} pending={busy === 'onoff'} disabled={disabled && busy !== 'onoff'} onPress={() => light && run('onoff', (api) => api.light(!light.onoff))} />
+        <Toggle label="Lumière" value={!!light?.onoff} pending={busy === 'onoff'} disabled={!controllable || (busy !== null && busy !== 'onoff')} onPress={() => light && run('onoff', (api) => api.light(!light.onoff))} />
       </View>
       {light?.onoff ? (
         <View style={{ marginTop: 12 }}>
           <SliderRow
             label="Intensité"
-            value={drag ?? level}
+            value={shown}
             min={min}
             max={max}
-            hint={busy === 'level' ? 'envoi au réveil…' : undefined}
-            disabled={disabled}
-            onChange={setDrag}
-            onComplete={(v) => run('level', (api) => api.light(true, v))}
+            hint={levelHint}
+            pending={unconfirmed}
+            disabled={!controllable}
+            onChange={setRequested}
+            onComplete={requestLevel}
           />
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
-            <Button label="−" onPress={() => run('level', (api) => api.light(true, Math.max(min, level - 1)))} disabled={disabled || level <= min} style={{ flex: 1 }} />
-            <Button label="+" onPress={() => run('level', (api) => api.light(true, Math.min(max, level + 1)))} disabled={disabled || level >= max} style={{ flex: 1 }} />
+            <Button label="−" onPress={() => requestLevel(Math.max(min, shown - 1))} disabled={!controllable || shown <= min} style={{ flex: 1 }} />
+            <Button label="+" onPress={() => requestLevel(Math.min(max, shown + 1))} disabled={!controllable || shown >= max} style={{ flex: 1 }} />
           </View>
         </View>
       ) : null}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11, marginTop: 16, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.hairline }}>
         <Icon name="moon" size={17} color={light?.ngtlt ? colors.accent : 'rgba(255,255,255,0.6)'} strokeWidth={1.5} />
         <T size={14.5} weight="medium" style={{ flex: 1 }}>Veilleuse</T>
-        <Toggle label="Veilleuse" value={!!light?.ngtlt} pending={busy === 'night'} disabled={disabled && busy !== 'night'} onPress={() => light && run('night', (api) => api.nightlight(!light.ngtlt))} />
+        <Toggle label="Veilleuse" value={!!light?.ngtlt} pending={busy === 'night'} disabled={!controllable || (busy !== null && busy !== 'night')} onPress={() => light && run('night', (api) => api.nightlight(!light.ngtlt))} />
       </View>
       {!link.canControl ? <T size={12} color={colors.textMuted} style={{ marginTop: 12 }}>{link.controlReason}</T> : null}
       {link.canControl && !light ? <T size={12} color={colors.textMuted} style={{ marginTop: 12 }}>État de la lampe pas encore relu.</T> : null}

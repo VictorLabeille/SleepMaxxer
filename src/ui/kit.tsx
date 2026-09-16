@@ -232,6 +232,7 @@ export function SliderRow({
   onChange,
   onComplete,
   disabled,
+  pending,
   hint,
 }: {
   label: string;
@@ -243,13 +244,18 @@ export function SliderRow({
   onChange?: (v: number) => void;
   onComplete?: (v: number) => void;
   disabled?: boolean;
+  /**
+   * La valeur montrée est demandée, pas encore relue dans l'appareil : elle perd la couleur
+   * d'accent, réservée à ce que l'appareil a confirmé. Le curseur, lui, reste manipulable.
+   */
+  pending?: boolean;
   hint?: string;
 }) {
   return (
     <View style={{ opacity: disabled ? 0.45 : 1 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <T size={14} weight="medium">{label}</T>
-        <T size={13.5} weight="semibold" color={colors.accent}>{`${value}${unit}`}</T>
+        <T size={13.5} weight="semibold" color={pending ? colors.textSoft : colors.accent}>{`${value}${unit}`}</T>
       </View>
       <RNSlider
         style={{ height: 40, marginHorizontal: -8 }}
@@ -343,7 +349,10 @@ export const styles = StyleSheet.create({
   iconButton: { width: TOUCH, height: TOUCH, alignItems: 'center', justifyContent: 'center' },
   card: { backgroundColor: colors.glass, borderColor: colors.glassBorder, borderWidth: 1, borderRadius: radius.card },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 18, paddingVertical: 14, minHeight: TOUCH },
-  toggle: { width: 52, height: 31, borderRadius: radius.pill, padding: 3 },
+  // `flexDirection: 'row'` n'est pas décoratif : sans lui React Native empile en colonne et le
+  // `justifyContent` de `Toggle` joue sur la verticale, où la course est nulle (31 − 2×3 = 25, la
+  // hauteur du rond). Le rond resterait à gauche quel que soit l'état.
+  toggle: { width: 52, height: 31, borderRadius: radius.pill, padding: 3, flexDirection: 'row' },
   knob: { width: 25, height: 25, borderRadius: 13, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center' },
   button: { minHeight: 50, borderRadius: radius.control, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, paddingHorizontal: 16 },
 });
