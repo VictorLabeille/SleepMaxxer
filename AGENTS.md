@@ -113,6 +113,12 @@ Une règle métier va dans `src/domain`, jamais dans un écran.
 
 - **Expo SDK 56** : lire la documentation versionnée (`docs.expo.dev/versions/v56.0.0`), pas celle
   de la dernière version.
+- **Les icônes de `assets/images/` dérivent toutes de `logo-source.jpg`** (détourage du fond, puis
+  mise à l'échelle dans la zone sûre Android) : les regénérer depuis lui. L'outil de génération est
+  `sharp`, à installer hors du dépôt — **ce n'est pas une dépendance du projet**, et ni Pillow ni
+  ImageMagick ne sont disponibles sur le poste.
+- **`npm run lint` installe ESLint dans le dépôt** : `expo lint` l'ajoute aux `devDependencies` et
+  réécrit `package.json` et `package-lock.json` avant d'échouer. Rendre les deux fichiers ensuite.
 - **`android/` est généré** par `expo prebuild` (et par EAS), non versionné. Toute configuration
   native passe par `app.json` et ses plugins, jamais par une retouche de `android/`.
 - **TypeScript 6 ne charge plus les `@types/*` d'office** : `tsconfig.json` les déclare (`jest`,
