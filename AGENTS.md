@@ -75,6 +75,11 @@ Une règle métier va dans `src/domain`, jamais dans un écran.
   transition, pas par la date que le réveil inscrit (horloge `wutim`, quelques secondes à part).
   L'app affiche ces heures telles quelles ; elle ne recompose pas une durée à partir de deux
   horloges.
+- **Une heure que le collecteur a mesurée n'est jamais « estimée ».** Un lever pris à l'extinction
+  de l'alarme est `observed` : le collecteur a vu le bit 11 retomber (renversé le 2026-09-16 sur
+  relevé, `.claude/specs/2026-09-16-origine-du-lever-observee.md` **du dépôt Somneo-Scraper**).
+  « Estimé » reste défini pour une heure réellement **déduite**, et plus rien n'en produit : ne
+  jamais en fabriquer une.
 - **L'app ne remet jamais l'heure du réveil, et ne promet pas qu'on le fera** : la remise à
   l'heure s'est révélée impossible (2026-09-13, cadrage §F). L'app **signale** un écart si le
   collecteur en rapporte un ; elle ne le corrige pas.
