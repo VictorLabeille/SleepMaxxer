@@ -110,7 +110,10 @@ function BedtimeCard({ current, collectorOk }: { current: Night | null; collecto
 
 function LightCard({ link }: { link: LinkView }) {
   const light = useApp((s) => s.device?.ports.wulgt?.body ?? null);
-  const [busy, setBusy] = useState<'onoff' | 'level' | 'night' | null>(null);
+  // `busy` ne porte que les interrupteurs. L'envoi d'intensité a son propre témoin : partager
+  // `busy` laissait la fin d'un envoi éteindre l'attente d'un interrupteur encore en vol.
+  const [busy, setBusy] = useState<'onoff' | 'night' | null>(null);
+  const [sendingLevelUi, setSendingLevelUi] = useState(false);
   const [requested, setRequested] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { min, max } = BOUNDS.lightLevel;
@@ -145,13 +148,15 @@ function LightCard({ link }: { link: LinkView }) {
    * à l'état relu et affiche l'erreur. Rien n'est donc jamais montré comme appliqué avant de
    * l'être — c'est le *statut* de la valeur, pas la valeur elle-même, qui porte la prudence.
    *
-   * Corollaire : `busy` ne désactive plus ni le curseur ni les boutons, sinon un appui sur deux
-   * est avalé pendant le vol. La sérialisation reste entière (`serialize()` dans `command()`), et
+   * Corollaire : rien ne désactive plus le curseur ni les boutons pendant un envoi, sinon un appui
+   * sur deux est avalé. La sérialisation reste entière (`serialize()` dans `command()`), et
    * `queuedLevel` ne garde que la dernière valeur demandée : le réveil sature sous une rafale.
+   * `sendingLevel` est la ref que lit la boucle entre deux `await` ; `sendingLevelUi` est l'état
+   * qui déclenche le rendu. Les deux sont nécessaires, et distincts de `busy`.
    */
   const flushLevel = async () => {
     sendingLevel.current = true;
-    setBusy('level');
+    setSendingLevelUi(true);
     let failure: string | null = null;
     while (queuedLevel.current !== null) {
       const value = queuedLevel.current;
@@ -166,7 +171,7 @@ function LightCard({ link }: { link: LinkView }) {
       }
     }
     sendingLevel.current = false;
-    setBusy(null);
+    setSendingLevelUi(false);
     if (failure !== null) {
       setError(failure);
       setRequested(null);
@@ -193,7 +198,7 @@ function LightCard({ link }: { link: LinkView }) {
   const shown = requested ?? level;
   const unconfirmed = requested !== null && requested !== level;
   const levelHint = unconfirmed
-    ? busy === 'level'
+    ? sendingLevelUi
       ? `envoi au réveil… · réveil : ${level}`
       : `réveil : ${level}`
     : undefined;
