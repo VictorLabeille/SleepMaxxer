@@ -51,6 +51,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "fae2b2d0-f2bd-4c78-8bbb-60ad338204cb"
+      }
+    },
+    "owner": "rotsiv"
   }
 }
