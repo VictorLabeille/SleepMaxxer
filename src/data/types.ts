@@ -20,9 +20,11 @@ export interface Night {
   bedtime: Epoch | null;
   risetime: Epoch | null;
   state: NightState;
-  /** `confirmed` (appui dans l'app), `observed` (appui dans SleepMapper), `pending` (retenu). */
+  /** `confirmed` (appui dans l'app), `observed` (transition vue par le collecteur, ou appui dans
+   *  SleepMapper), `pending` (retenu en attendant le réveil). */
   bedtime_origin: string | null;
-  /** `confirmed` (geste de lever) ou `estimated` (fin de l'alarme). */
+  /** `confirmed` (geste de lever) ou `observed` (extinction de l'alarme, vue par le collecteur).
+   *  `estimated` reste défini mais plus rien ne le produit depuis le 2026-09-16 — `domain/nights.ts`. */
   risetime_origin: string | null;
   raw_tg2bd: string | null;
   raw_tendb: string | null;

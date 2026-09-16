@@ -30,9 +30,12 @@ export function isInProgress(n: Night): boolean {
 }
 
 /**
- * Confirmé : l'heure vient d'un geste — dans l'app (`confirmed`), dans SleepMapper (`observed`) ou
- * retenu en attendant le réveil (`pending`). Estimé : le lever pris à la fin de l'alarme. Corrigé :
- * une correction à la main — une correction ne produit jamais « estimé » (cadrage §6).
+ * Confirmé : l'heure est mesurée — un geste dans l'app (`confirmed`), ou une transition que le
+ * collecteur a vue (`observed`) : coucher relevé dans `wungt`, lever pris à l'extinction de
+ * l'alarme. Corrigé : une correction à la main — elle ne produit jamais « estimé » (cadrage §6).
+ * Estimé : une heure *déduite*. Depuis le 2026-09-16, plus rien n'en produit — le collecteur ne
+ * déduit rien, et sans geste il n'ouvre aucune nuit. Le libellé est gardé pour le jour où une
+ * déduction existera : le collecteur relève déjà la lumière et le bruit de la chambre.
  */
 export function timeOrigin(
   n: Night,
