@@ -1,113 +1,101 @@
 # SleepMaxxer
 
-Application Android qui remplace **SleepMapper**, l'application constructeur du réveil
-**Philips Somneo HF3671/01**, pour permettre de couper l'accès internet de l'appareil sans
-rien perdre de ce qui sert au quotidien.
+**The app that lets a connected alarm clock be disconnected.**
 
-Front-end du projet. Le back-end est
-[Somneo-Scraper](https://github.com/VictorLabeille/Somneo-Scraper), qui collecte, historise et
-relaie.
+An Android replacement for SleepMapper, the vendor app of the Philips Somneo HF3671/01. It shows
+the sleep history, drives the light and the alarms, and never needs the manufacturer's servers —
+or an account, or a pairing step.
 
-Stack : **Expo SDK 56** · React Native · TypeScript · SQLite.
+Front end of the project. The back end is
+[Somneo-Scraper](https://github.com/VictorLabeille/Somneo-Scraper), which collects, stores and
+relays.
 
-> **État : application écrite le 2026-09-14, testée contre le collecteur déployé ; en essai.**
-> Les choix faits sans arbitrage sont listés, avec leur raison, dans
-> [`.claude/specs/2026-09-14-plan-technique-app.md`](.claude/specs/2026-09-14-plan-technique-app.md).
-> Reste à vérifier sur le téléphone : la découverte du collecteur par mDNS, et le geste du
-> coucher, d'une main, dans le noir.
+**Expo SDK 56 · React Native · TypeScript · SQLite**
 
-## Pourquoi
+## Why it has to exist
 
-Le Somneo est en permanence connecté aux serveurs Philips, et SleepMapper est lente à démarrer
-et encombrée de fonctions inutilisées. Mais le point décisif n'est pas le confort.
+Comfort is the obvious reason — SleepMapper is slow to start and carries features nobody asked
+for. It is not the real one.
 
-La rétro-ingénierie menée le 31 août 2026 a établi que **l'API locale du réveil n'a aucune
-mémoire** : elle ne donne que l'instant présent, la fenêtre d'agrégation de 15 minutes en cours
-et la nuit en cours. Les courbes d'historique de SleepMapper viennent du cloud Philips, que le
-réveil alimente lui-même.
+Reverse engineering the device established that **its local API has no memory**. It answers with
+the present moment, the 15-minute aggregation window in progress, and the night in progress.
+SleepMapper's history charts come from the Philips cloud, which the clock feeds itself.
 
-**Couper internet supprime donc la fonction principale de l'application constructeur.** Isoler
-le réveil n'est possible qu'à condition de posséder d'abord son propre historique et sa propre
-télécommande. SleepMaxxer n'est pas un confort : c'est la condition de l'isolement.
+**So cutting the internet removes the vendor app's main function.** Isolating the clock is only
+possible if you already own its history and its remote control. SleepMaxxer is not a nicer front
+end; it is the condition that makes isolation survivable.
 
-S'y ajoute un constat d'hygiène : le réveil n'applique **aucun contrôle d'accès sur le réseau
-local**. Le port qui livre sa clé de sécurité et celui qui déclenche une réinitialisation
-d'usine répondent à quiconque se trouve sur le LAN.
+One more finding, from the same work: the clock applies **no access control on the local network**.
+The port that hands out its security key and the port that triggers a factory reset will answer
+anyone on the LAN.
 
-## Architecture
+## How the pieces fit
 
 ```
 Somneo HF3671/01  ←→  Somneo-Scraper (Radxa Zero, 24/7)  ←→  SleepMaxxer
-   API locale            collecte · historise · relaie        (ce dépôt)
-   sans mémoire          SQLite — la source                    copie locale
-                                                               + export Drive
+   local API             collects · stores · relays          (this repo)
+   no memory             SQLite — the source                 local copy
+                                                             + Drive export
 ```
 
-- L'application **ne parle jamais au réveil directement** : tout passe par le collecteur,
-  historique comme temps réel comme pilotage.
-- Le collecteur et le téléphone sont sur le **même réseau domestique**. Aucune exposition vers
-  l'extérieur.
-- Le téléphone **conserve une copie complète de l'historique**, rattrapée à chaque ouverture.
-  Elle sert de sauvegarde — le collecteur est sinon le seul dépositaire d'une donnée qui ne se
-  remesure pas — et rend l'historique consultable hors du domicile, en lecture seule, sans que
-  le collecteur ait à sortir du réseau. Le collecteur reste la source : en cas de divergence,
-  c'est lui qui fait autorité.
-- Le réveil **n'exige aucune authentification** : ni appairage, ni compte Philips.
-- **L'heure du réveil ne se remet pas à l'heure** : aucune voie d'écriture n'existe (mesuré le
-  2026-09-13, dépôt Somneo-Scraper). Le collecteur mesure l'écart, l'application le signale.
-  Les heures des nuits, elles, viennent du collecteur (NTP), et restent justes.
+- The app **never talks to the clock directly** — history, live values and control all go through
+  the collector.
+- Collector and phone sit on the **same home network**. Nothing is exposed outside it.
+- The phone keeps a **full copy of the history**, caught up on every launch. It is the backup — the
+  collector is otherwise the sole holder of data that cannot be measured again — and it makes the
+  history readable away from home, read-only, without the collector ever leaving the network. On a
+  disagreement, the collector wins.
+- **The clock's time cannot be set**: no write path exists. The collector measures the drift and
+  the app reports it. Night timestamps come from the collector, on NTP, and stay correct.
 
-## Contenu du dépôt
+## Repository map
 
-| Chemin | Contenu |
+| Path | What is there |
 | --- | --- |
-| `src/` | L'application : écrans, règles du domaine, copie locale, rattrapage, découverte du collecteur |
-| `app.json`, `eas.json` | Configuration Expo et profils de construction |
-| `.claude/specs/` | Cadrages fonctionnels datés — périmètre, cas limites, décisions et leurs raisons |
-| `design/*.dc.html` | Maquettes : prototype navigable et états dégradés, sources du canvas |
-| `docs/seuils-conditions-sommeil.md` | Seuils de qualité du sommeil relevés dans SleepMapper avant la coupure |
-| `docs/sleepmapper/README.md` | Relevé écrit de l'interface remplacée, écran par écran |
-| `AGENTS.md` | Conventions du dépôt, à l'usage des contributeurs et des agents |
+| `src/` | The app: screens, domain rules, local copy, catch-up, collector discovery |
+| `app.json`, `eas.json` | Expo configuration and build profiles |
+| `.claude/specs/` | Dated functional specs — scope, edge cases, decisions and their reasons |
+| `design/*.dc.html` | Mockups: navigable prototype and degraded states |
+| `docs/` | Sleep-quality thresholds read from SleepMapper, and a written record of the replaced interface, screen by screen |
+| `AGENTS.md` | Conventions, scope and hard rules for anyone — human or agent — working on this repo |
 
-Le périmètre fonctionnel de l'application — ce qu'elle fait, ce qu'elle ne fait pas, et
-pourquoi — est décrit dans le cadrage :
-[`.claude/specs/2026-09-05-spec-fonctionnelle-sleepmaxxer.md`](.claude/specs/2026-09-05-spec-fonctionnelle-sleepmaxxer.md).
+The device protocol, field semantics and hardware traps live in `docs/somneo-api.md` **of the
+Somneo-Scraper repository**.
 
-Protocole du réveil, sémantique des champs et pièges matériels : `docs/somneo-api.md` **du
-dépôt Somneo-Scraper**.
+> The SleepMapper screenshots under `docs/sleepmapper/` are not versioned — they hold personal
+> data. On a fresh clone only the written record exists.
 
-> Les captures d'écran de `docs/sleepmapper/` ne sont pas versionnées (données personnelles) :
-> sur un clone frais, seul le relevé écrit existe.
+Documentation is in French; this page is not.
 
-## Développer
+## Developing
 
 ```bash
 npm install
-npm test               # règles du domaine, et rattrapage contre un faux collecteur
+npm test               # domain rules, and catch-up against a fake collector
 npm run typecheck
-COLLECTOR_URL=http://<carte>:8760 npm test -- collector.live   # contrat, vrai collecteur, lecture seule
+COLLECTOR_URL=http://<board>:8760 npm test -- collector.live   # contract, real collector, read-only
 ```
 
-**Sur le téléphone**, l'app trouve le collecteur seule, par mDNS : aucune adresse à saisir.
+**On a phone**, the app finds the collector by itself over mDNS — no address to type.
 
-**Dans l'émulateur**, le multicast ne traverse pas son NAT : l'adresse se donne à Metro, pour le
-développement seulement.
+**In the emulator**, multicast does not cross its NAT, so the address is handed to Metro, for
+development only:
 
 ```bash
-EXPO_PUBLIC_COLLECTOR_URL=http://<carte>:8760 npx expo start
+EXPO_PUBLIC_COLLECTOR_URL=http://<board>:8760 npx expo start
 ```
 
-**Construire l'APK** : `eas build -p android --profile preview`, ou sans EAS, avec un JDK 17 et le
-SDK Android (`JAVA_HOME`, `ANDROID_HOME`) :
+**Building the APK**: `eas build -p android --profile preview`, or locally with a JDK 17 and the
+Android SDK (`JAVA_HOME`, `ANDROID_HOME`):
 
 ```bash
 npx expo prebuild --platform android
 cd android && ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a
-# → android/app/build/outputs/apk/release/app-release.apk, pour un téléphone arm64
+# → android/app/build/outputs/apk/release/app-release.apk, for an arm64 phone
 ```
 
-`android/` est généré et non versionné : toute configuration native passe par `app.json`. L'APK
-local est signé avec la clé de débogage — suffisant pour l'installer sur son propre téléphone.
+`android/` is generated and not versioned: native configuration goes through `app.json`. A local
+APK is signed with the debug key — enough to install on your own phone.
 
 ## Licence
 

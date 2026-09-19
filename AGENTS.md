@@ -3,8 +3,9 @@
 > Source de vérité unique pour tout agent (humain ou IA) opérant sur ce dépôt.
 > Conventions **neutres et model-agnostic**. `CLAUDE.md` ne fait que rediriger ici.
 >
-> Ce fichier **oriente, il ne documente pas**. Le fonctionnel est dans `README.md`, le
-> pourquoi dans le cadrage, les faits dans `docs/`. Ne rien recopier ici : y renvoyer.
+> Ce fichier **oriente, il ne documente pas**. La présentation du projet est dans `README.md`
+> (en anglais, c'est une vitrine), le pourquoi dans le cadrage, les faits dans `docs/`,
+> l'avancement dans la note Obsidian. Ne rien recopier ici : y renvoyer.
 
 ## Où trouver quoi — à lire avant d'écrire
 
@@ -19,7 +20,8 @@
 | Comment le code est bâti, et les choix faits **par défaut**, sans arbitrage | `.claude/specs/2026-09-14-plan-technique-app.md` |
 | Ce que le collecteur ne tient pas du contrat, et ce que l'app contourne | `.claude/specs/2026-09-14-ecarts-contrat-sleepmaxxer.md` **du dépôt Somneo-Scraper** |
 | Ce que l'app doit changer depuis les corrections du collecteur (2026-09-15), et ce qui reste à trancher | `.claude/specs/2026-09-15-adaptations-collecteur.md` |
-| Lancer, tester, construire l'APK | `README.md`, « Développer » |
+| Lancer, tester, construire l'APK | `README.md`, « Developing » |
+| Où en est l'avancement | Note Obsidian `Projets/SleepMaxxer.md`, et `git log` |
 
 Code : `src/app` (écrans, expo-router) · `src/domain` (règles pures, testées) · `src/data`
 (API, copie SQLite, rattrapage, mDNS, sauvegarde) · `src/state` (état, commandes) · `src/ui`.
